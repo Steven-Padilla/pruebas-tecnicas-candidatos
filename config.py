@@ -1,4 +1,5 @@
 from decouple import config
+from urllib.parse import quote_plus
 
 class Config():
     SECRET_KEY = config('SECRET_KEY')
@@ -9,7 +10,11 @@ class DevelopmentConfig(Config):
     SERVER = config('MYSQL_HOST')
     DB_CENTRAL = config('MYSQL_DB')
 
-    SQLALCHEMY_DATABASE_URI= f"mysql+pymysql://{USER}:{PASSWORD}@{SERVER}/{DB_CENTRAL}"
+    password_encoded = quote_plus(PASSWORD)
+
+    SQLALCHEMY_DATABASE_URI= f"mysql+pymysql://{USER}:{password_encoded}@{SERVER}/{DB_CENTRAL}"
+
+    print(SQLALCHEMY_DATABASE_URI)
 
     SQLALCHEMY_ENGINE_OPTIONS = {
     'pool_recycle': 280,
