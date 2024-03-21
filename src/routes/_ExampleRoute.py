@@ -1,7 +1,7 @@
 from typing import Any, Union
 from flask import Blueprint, jsonify, request
 from orm_models import Users, UsersCentral
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from src.database.db import get_connection_servicecode_orm
 from src.utils.errors.CustomException import CustomException, MissingDataException, MissingKeyException
 from src.services._ExampleService import ExampleService
@@ -78,7 +78,7 @@ def model_example():
         #Los modelos cuentan con un serializer para obtenerlos en formato JSON ()
         json_response = first_user.to_dict(only=('id','name')) #funciones only() y rules() reciben tuplas
 
-        print(first_user.to_dict(rules=('id',))) #'rules' recibe columnas que no quieres enviar. 'only' el caso contrario
+        print(first_user.to_dict(rules=('-id',))) #'rules' recibe columnas que no quieres enviar. 'only' hace el caso contrario
         print(first_user.to_dict(only=('name',)))
 
         return jsonify({'data': json_response, 'success': True})
@@ -99,7 +99,8 @@ def model_club_example(service_code): #puedes probar con 144
 
         #Obtenemos una "session" que este conectada a la bd del club
         engine = get_connection_servicecode_orm(service_code)
-        db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+        with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
+            db_session: Session
 
         #Se utiliza SQL Alchemy ORM 
         first_user: Union[Users, Any] = db_session.query(Users).first()
