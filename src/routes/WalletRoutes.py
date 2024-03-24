@@ -14,7 +14,6 @@ def get_wallets_by_club():
     if has_access == False:
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
-    
     try:
         wallets=[]
         service_code = request.json['service_code']

@@ -1,10 +1,44 @@
 from datetime import datetime
+from typing import Any, Union
 from sqlalchemy_serializer import SerializerMixin
 from extensions import db
-from sqlalchemy import Column, Float, ForeignKey, Integer, String, TIMESTAMP, Text, text 
-
+from sqlalchemy import CHAR, Column, DateTime, Float, ForeignKey, Integer, LargeBinary, String, TIMESTAMP, Text, TypeDecorator, cast, func, text, BLOB, type_coerce 
 from sqlalchemy.orm import relationship
 
+
+my_key = "B!1w8*NAtS3DUM1T^%kvhUI*S^_"
+
+
+class CustomBLOB(TypeDecorator):
+    impl = LargeBinary
+    cache_ok = True
+
+    def bind_expression(self, bindvalue):
+        return func.aes_encrypt(
+            type_coerce(bindvalue, CHAR()), func.sha2(my_key, 512),
+        )
+
+    def column_expression(self, col):
+        return cast(
+            func.aes_decrypt(col, func.sha2(my_key, 512),),
+            CHAR(),
+        )
+
+class UsersSystem(db.Model, SerializerMixin): 
+    __tablename__ = "usuarios_sistema"
+
+    id = Column("id",Integer, primary_key=True)
+    username = Column("username",String(30), nullable=False)
+    password = Column("password", CustomBLOB, nullable=False)
+    user_type_id = Column("user_type", Integer, ForeignKey('tipousuario.idtipousuario'), index=True)
+    profile_id = Column("profile",Integer, ForeignKey('perfiles.idperfiles'), index=True)
+    name = Column("name",String(255), nullable=False)
+    lastname = Column("paterno",String(255), nullable=False)
+    secondsurname = Column("materno",String(255), nullable=False)
+    service_code = Column("service_code", Integer, nullable=False)
+
+    user_type = relationship("UserType")
+    profile = relationship("Profile")
 
 class UsersCentral(db.Model, SerializerMixin):
     __tablename__ = 'usuarios_central'
@@ -109,3 +143,184 @@ class Users(db.Model, SerializerMixin):
         }
         data = {key: "" if value is None else value for key, value in data.items()}
         return data
+
+class Courts(db.Model, SerializerMixin):
+    __tablename__ = 'zonas'
+    serialize_rules = ('-address','-estatus','-color','-configuration_id','-image')
+    id = Column('idzona', Integer, primary_key=True)
+    name = Column('nombre',String(255))
+    address = Column('direccion',String(45))
+    active = Column('cancha_activa',Integer, server_default="1", comment='0.-inactivo\t\\n1.-activo')
+    enable_reservation_app = Column('habilitar_reservas_app',Integer, comment='0.-inactivo\t\\n1.-activo')
+    color = Column('color',String(45))
+    configuration_id = Column('idzonasconfiguracion',ForeignKey('zonasconfiguracion.idzonasconfiguracion'), index=True, server_default=text("'0'"))
+    image = Column('imagen',String(255))
+    size_id = Column('tamanio_cancha', ForeignKey('tamanio_cancha.id'),index=True)
+    sport = Column('deporte', Integer,index=True)
+    type_id = Column('tipo_cancha',ForeignKey('tipo_cancha.id'),index=True)
+    characteristic_id = Column('caracteristica_cancha',ForeignKey('caracteristica_cancha.id'),index=True)
+    
+    characteristic = relationship('CourtCharacteristic')
+    type = relationship('CourtType')
+    size = relationship('CourtSize')
+    configuration = relationship('CourtsConfiguration')
+    
+    ##only specific colums
+    def to_dict_for_app_choose_court_list(self):
+        court_colums = ("id", "name", "image")
+        characteristic_columns = ("characteristic.caracteristic",)
+        size_columns = ("size.size",)
+        type_columns = ("type.type",)
+
+        reservation_dict = self.to_dict(
+            only=court_colums + characteristic_columns + size_columns + type_columns
+        )
+        return reservation_dict
+    def to_json(self, sport_name: str) -> dict[str, Any]:
+        """
+            Generates the json that uses the gp_admin model
+
+            Params:
+                sport_name: Name of the sport object obtained from bdcentralgp
+        """
+        court_colums = ("id","name","active","color","image","type_id", "enable_reservation_app")
+        characteristics = self.characteristic
+        size = self.size
+        court_type = self.type
+        court_dict: Union[dict, Any] = self.to_dict(only=court_colums)
+        court_dict.update({"sport":sport_name, "sport_id": self.sport, "type":court_type.type, "characteristics": {"characteristic" : characteristics.caracteristic, "characteristic_id" : characteristics.id, "size":size.size, "size_id":size.id}})
+        
+        return court_dict
+
+class CourtCharacteristic(db.Model, SerializerMixin):
+    __tablename__ = "caracteristica_cancha"
+
+    id = Column(Integer, primary_key=True)
+    caracteristic = Column(String(45, collation="utf8mb3_unicode_ci"))
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime, default="CURRENT_TIMESTAMP")
+
+class CourtType(db.Model, SerializerMixin):
+    __tablename__ = "tipo_cancha"
+
+    id = Column(Integer, primary_key=True)
+    type = Column(String(45, collation="utf8mb3_unicode_ci"))
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime, default="CURRENT_TIMESTAMP")
+
+class CourtSize(db.Model, SerializerMixin):
+    __tablename__ = "tamanio_cancha"
+
+    id = Column(Integer, primary_key=True)
+    size = Column(String(45, collation="utf8mb3_unicode_ci"))
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime, default="CURRENT_TIMESTAMP")
+
+class Sport(db.Model, SerializerMixin):
+    __tablename__ = "deporte"
+
+    id = Column("iddeporte", Integer, primary_key=True, autoincrement=True)
+    name = Column("deporte", String(255))
+    status = Column("estatus", Integer, comment="0.-inactivo\n1.-activo")
+
+class CourtsConfiguration(db.Model, SerializerMixin):
+    __tablename__ = "zonasconfiguracion"
+    id = Column("idzonasconfiguracion", Integer, primary_key=True, autoincrement=True)
+    name = Column("nombre", String(45))
+    interval = Column("intervalo", String(45), comment='En minutos')
+    schedule_zone_configuration_id = Column("idhorariozonaconfiguracion", Integer, ForeignKey('horariozonaconfiguracion.idhorariozonaconfiguracion'), index=True)
+
+    schedule_zone_configuration = relationship("ScheduleZoneConfiguration")
+
+class ScheduleZoneConfiguration(db.Model, SerializerMixin):
+    __tablename__ = "horariozonaconfiguracion"
+
+    idhorariozonaconfiguracion = Column(Integer, primary_key=True, autoincrement=True)
+    dia = Column(String(45))
+    horainicial = Column(String(45))
+    horafinal = Column(String(45))
+
+class Enterprise(db.Model, SerializerMixin):
+    __tablename__ = "empresa"
+
+    id = Column("idempresa", Integer, primary_key=True, autoincrement=True)
+    name = Column("nombre", String(255))
+    telephone = Column("telefono", String(45))
+    cellphone = Column("celular", String(100))
+    latitude = Column("latitud", String(255))
+    longitude = Column("longitud", String(255))
+    postal_code = Column("codigopostal", String(45))
+    country = Column("pais", String(45))
+    state = Column("estado", String(45, collation="utf8mb3_general_ci"))
+    city = Column("municipio", String(45, collation="utf8mb3_general_ci"))
+    settlement = Column("asentamiento", String(45))
+    neighborhood = Column("colonia", String(45, collation="utf8mb3_general_ci"))
+    address = Column("direccion", String(45, collation="utf8mb3_general_ci"))
+    status = Column("estatus", Integer)
+    service_code = Column("codserv", Integer)
+    image = Column("imagen", String(255))
+    reserve_day_limit = Column("limitediasreserva", Integer)
+
+class ModuleMenu(db.Model, SerializerMixin):
+    __tablename__ = "modulos_menu"
+
+    id = Column("idmodulos_menu", Integer, primary_key=True, autoincrement=True)
+    module_id = Column("idmodulos",Integer, ForeignKey('modulos.idmodulos'), index=True)
+    menu = Column("menu", String(100))
+    file = Column("archivo", String(100))
+    file_path = Column("ubicacion_archivo", String(100))
+    level = Column("nivel", Integer)
+    status = Column("estatus", Integer)
+    icon = Column("icono", String(45))
+    admin = Column("admin", Integer)
+
+    module = relationship("Module")
+
+class Module(db.Model, SerializerMixin):
+    __tablename__ = "modulos"
+
+    id = Column("idmodulos", Integer, primary_key=True, autoincrement=True)
+    name = Column("modulo", String(100))
+    level = Column("nivel", Integer)
+    status = Column("estatus", Integer)
+    icon = Column("icono", String(45))
+    admin = Column("admin", Integer)
+class ModuleMenuClub(db.Model, SerializerMixin):
+    __tablename__ = "modulos_menu_club"
+
+    id = Column("idmodulos_menu", Integer, primary_key=True, autoincrement=True)
+    module_id = Column("idmodulos",Integer)
+    menu = Column("nombre", String(100))
+    icon = Column("icono", String(45))
+
+class Permission(db.Model, SerializerMixin):
+    __tablename__ = "perfiles_permisos"
+
+    id = Column("id", Integer, primary_key=True, autoincrement=True)
+    profile_id = Column("idperfiles", Integer, ForeignKey('perfiles.idperfiles'), index=True)
+    module_menu_id = Column("idmodulos_menu", Integer, ForeignKey('modulos_menu.idmodulos_menu'), index=True)
+    insert = Column("insertar", Integer)
+    delete = Column("borrar", Integer)
+    edit = Column("modificar", Integer)
+    admin = Column("admin", Integer, comment="1: En nuevo manager 0: Aun no disponible en el nuevo manager")
+
+    profile = relationship("Profile")
+    module_menu = relationship("ModuleMenu")
+
+class Profile(db.Model, SerializerMixin):
+    __tablename__ = "perfiles"
+
+    id = Column("idperfiles", Integer, primary_key=True, autoincrement=True)
+    name = Column("perfil", String(100))
+    status = Column("estatus", Integer)
+
+class UserType(db.Model, SerializerMixin):
+    __tablename__ = "tipousuario"
+
+    id = Column("idtipousuario", Integer, primary_key=True, autoincrement=True)
+    name = Column("nombretipo", String(255))
+    show_on_app = Column("mostrarenapp", Integer)
+    status = Column("estatus", Integer)
+    default = Column("predeterminado", Integer)
+    access_system = Column("sistema", Integer)
+    is_costumer = Column("cliente", Integer)

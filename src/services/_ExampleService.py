@@ -36,7 +36,7 @@ class ExampleService:
 
                 if user_central is None:
                     # *.__tablename__ es un valor que se establece en todos los modelos
-                    raise MissingDataException(UsersCentral.__tablename__, user_id, get_db_name_app())
+                    raise MissingDataException(UsersCentral.__tablename__, get_db_name_app(), user_id)
 
                 #Para este caso en particular es probable que el usuario no exista en la bd del club pese a estar en la bd central
                 user_club: Union[Users, Any] = db_session.query(Users).get(user_id)

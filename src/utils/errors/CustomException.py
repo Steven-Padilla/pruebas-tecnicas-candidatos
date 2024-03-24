@@ -24,8 +24,11 @@ class MissingKeyException(Exception):
         super().__init__(self.message)
 
 class MissingDataException(Exception):
-    def __init__(self, tablename, id_value, db_name):
-        self.message = f"El registro con id = {id_value} no existe en la tabla '{tablename}' de {db_name}"
+    def __init__(self, tablename, db_name, id_value = None,):
+        if id_value is not None:
+            self.message = f"El registro con id = {id_value} no existe en la tabla '{tablename}' de {db_name}"
+        else:
+            self.message = f"El registro buscado no existe en la tabla '{tablename}' de {db_name}"
         super().__init__(self.message)
 
 class DataTypeException(Exception):
