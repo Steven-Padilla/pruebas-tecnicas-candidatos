@@ -1,7 +1,7 @@
 from typing import Any, Union
 
 from sqlalchemy import or_
-from orm_models import Module, ModuleMenu, ModuleMenuClub, Permission, Profile, UsersSystem
+from orm_models import Module, ModuleMenu, Permission, Profile
 from src.database.db import get_connection_servicecode_orm
 from src.utils.errors.CustomException import CustomException
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
@@ -114,17 +114,10 @@ class ModuleMenuService:
                     
                     module_menus_club_ids = [p.module_menu_id for p in permissions] #ids de menus permitidos
 
-                    module_menu_club_allowed = db_session.query(ModuleMenuClub).filter(
-                        ModuleMenuClub.module_id.in_(module_ids_list),
-                        ModuleMenuClub.id.in_(module_menus_club_ids) 
+                    module_menu_club_allowed = db_session.query(ModuleMenu).filter(
+                        ModuleMenu.module_id.in_(module_ids_list),
+                        ModuleMenu.id.in_(module_menus_club_ids) 
                     ).all()
-
-                    query_printable = db_session.query(ModuleMenuClub).filter(
-                        ModuleMenuClub.module_id.in_(module_ids_list),
-                        ModuleMenuClub.id.in_(module_menus_club_ids) 
-                    )
-
-                    print(str(query_printable.statement.compile(compile_kwargs={"literal_binds": True})))
 
                     module_menus_list = [cls.update_module_menu_data(mmc.to_dict(), cls.get_model_menu_from_central(mmc.module_id)) for mmc in module_menu_club_allowed]
             return module_menus_list

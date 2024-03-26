@@ -21,14 +21,28 @@ def get_permissions(profile_id):
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
 
-@main.route('/<profile_id>/getpermission', methods=['POST'], strict_slashes=False)
-def get_permission(profile_id):
+@main.route('/submodule', methods=['GET'], strict_slashes=False)
+def get_permission_module_by_profile_id():
     has_access = Security.verify_token(request.headers)
     if has_access:
         try:
-            service_code = request.json['service_code']
-            id_permission = request.json['id']
-            permission = ProfilePermissionsService.get_permission(id_permission, service_code, profile_id)
+            data = request.args
+            payload = Security.get_payload_token(request.headers)
+
+            
+
+            service_code = payload.get("service_code")
+            is_user_system_central = payload.get("is_user_system_central")
+            submodule_id = data['submodule_id']
+            profile_id = data['profile_id']
+
+            if submodule_id.isdigit():
+                submodule_id = int(submodule_id)
+
+            if profile_id.isdigit():
+                profile_id = int(profile_id)
+
+            permission = ProfilePermissionsService.get_permission_module_by_profile_id(submodule_id, profile_id, service_code, is_user_system_central)
             return jsonify({'data': permission, 'success': True})
             
         except CustomException as ex:

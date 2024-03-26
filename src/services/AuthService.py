@@ -39,8 +39,8 @@ class AuthService():
             
             if user is not None:
                 user_type = "Administrator"
-                is_user_system_central = user.user_type.is_costumer == 0 #diferencia entre usuarios del administrador y clientes
-                if is_user_system_central == False: #Es cliente
+                is_user_system_central = True
+                if user.user_type.is_costumer == 1: #Es cliente
                     club: Union[Enterprise, Any] = Enterprise.query.filter(Enterprise.service_code == service_code).first()
                     if club.status != 1: #Club existente pero sin servicio
                         return {"message": "El club vinculado a esta cuenta está fuera de servicio", "success": False}
