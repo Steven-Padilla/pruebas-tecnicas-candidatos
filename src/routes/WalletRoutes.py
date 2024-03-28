@@ -1,67 +1,90 @@
 from flask import Blueprint, request, jsonify
-from src.database.db import get_connection_servicecode_orm
-from src.utils.errors.CustomException import CustomException, DataTypeException, MissingKeyException 
+# from src.database.db import get_connection_servicecode_orm
+from src.services.WalletService import WalletService
+from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException 
 from src.utils.Security import Security 
 from orm_models import Users, UsersCentral, DigitalWallet
-from sqlalchemy.orm import scoped_session, sessionmaker
+# from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 main = Blueprint('wallet_blueprint', __name__)
 
-@main.route('/', methods=['POST'], strict_slashes=False)
+@main.route('/', methods=['GET'], strict_slashes=False)
 def get_wallets_by_club():
     has_access = Security.verify_token(request.headers)
-    if has_access == False:
+    if has_access is False:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    try: 
+        service_code = request.args['service_code']
+        if not service_code:
+            raise MissingKeyException(missing_key="service_code")
+            
+        response=WalletService.get_wallets_by_club(service_code)
+        return response
+    
+    except MissingKeyException as ex:
+        print(f'WalletRoutes.py - get_wallets_by_club() - Error: {ex.message}')
+        return jsonify({'message': "Ups, algo salió mal", 'success': False})
+    except CustomException as ex:
+            print(str(ex))
+            return CustomException(ex)
+   
+@main.route('/balance/', methods=['GET'], strict_slashes=False)
+def get_balance_by_user_id():
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
     try:
-        wallets=[]
-        service_code = request.json['service_code']
-        #Crear conexion con bd del club
-        engine = get_connection_servicecode_orm(service_code)
-        db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-
-        #Obtener todos los usuarios de la bd del club
-        items = db_session.query(Users).all()
-
-        if not items:
-            return jsonify({'data': [], 'success': True})
-        
-        #Obtener todos los usuarios de la bdcentral
-        users = UsersCentral.query.filter(UsersCentral.status == 1).all()
-
-        """
-        TODO: Optimizar y completar el proceso para obtener el monedero de cada usuario
-
-        - Los datos como nombre, apellidos, foto se almacenan en la bdcentral
-        - El monedero es por club, por lo que el saldo solo se encuentra en la bd del club
-
-        Retorno:
-            Listado con datos del usuario y saldo del mismo, además de los movimientos de su monedero
-        """
-        dict = {}
-        dict = {value.id: {'name': f"{value.name} {value.lastname} {value.secondsurname}"}
-            for value in users}
-        for item in items:
-            user = dict.get(item.id,None)
-            if (user != None):        
-                wallets.append({
-                    'id': item.id,
-                    'name': user['name'],
-                    'wallet_balance': item.wallet_balance
-                })
-        db_session.close()
+        args=request.args
+        required_keys=['service_code','user_id']
+        for key in required_keys:
+            if args.get(key) is None:
+                raise MissingKeyException(missing_key=key)
+            
+        service_code = args['service_code']
+        user_id = args['user_id']
+        response=WalletService.get_balance_by_user_id(service_code,user_id)
 
 
-        return jsonify({'data': wallets, 'success': True})
-
+        return response
+    
+    except MissingKeyException as ex:
+        print(f'WalletRoutes.py - get_balance_by_user_id() - Error: {ex.message}')
+        return jsonify({'message': "Ups, algo salió mal", 'success': False})
     except CustomException as ex:
         print(str(ex))
         return CustomException(ex)
+    
+@main.route('/save', methods=['POST'], strict_slashes=False)
+def save_new_wallet_move():
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    try:
+        body= request.json
+        required_keys=["service_code","amount","mode","type","concept","user_id"]
+        for key in required_keys:
+            if body.get(key) is None:
+                raise MissingKeyException(missing_key=key)
 
-"""
-TODO: Creación de Módulo "Monedero"
-    - Traer registros de monedero por usuario
-    - Traer balances actuales de monedero por usuario
-    - Guardar movimientos de monedero (Cargo/Abono)
-"""
+        service_code=body["service_code"]
+        amount=body["amount"]
+        mode=body["mode"]
+        move_type=body["type"]
+        concept=body["concept"]
+        user_id=body["user_id"]
+        response =WalletService.save_new_balance( service_code,amount,mode,move_type,concept,user_id)
+        return response
+      
+    except CustomException as ex:
+        print(str(ex))
+        return CustomException(ex)
+    except MissingDataException as ex:
+        print(f'WalletRoutes.py - save_new_wallet_move() - Error: {ex.message}')
+        return jsonify({'message': "Ups, algo salió mal", 'success': False})
+    except MissingKeyException as ex:
+        print(f'WalletRoutes.py - save_new_wallet_move() - Error: {ex.message}')
+        return jsonify({'message': "Ups, algo salió mal", 'success': False})
