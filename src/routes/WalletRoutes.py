@@ -28,7 +28,7 @@ def get_wallets_by_club():
             return jsonify({'data': [], 'success': True})
         
         #Obtener todos los usuarios de la bdcentral
-        users = UsersCentral.query.filter(UsersCentral.type != 0).all()
+        users = UsersCentral.query.filter(UsersCentral.status == 1).all()
 
         """
         TODO: Optimizar y completar el proceso para obtener el monedero de cada usuario
