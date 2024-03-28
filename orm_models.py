@@ -285,13 +285,6 @@ class Module(db.Model, SerializerMixin):
     status = Column("estatus", Integer)
     icon = Column("icono", String(45))
     admin = Column("admin", Integer)
-class ModuleMenuClub(db.Model, SerializerMixin):
-    __tablename__ = "modulos_menu_club"
-
-    id = Column("idmodulos_menu", Integer, primary_key=True, autoincrement=True)
-    module_id = Column("idmodulos",Integer)
-    menu = Column("nombre", String(100))
-    icon = Column("icono", String(45))
 
 class Permission(db.Model, SerializerMixin):
     __tablename__ = "perfiles_permisos"

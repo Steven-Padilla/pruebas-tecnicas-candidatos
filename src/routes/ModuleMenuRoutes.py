@@ -52,10 +52,9 @@ def get_menus_by_profile_permissions(profile_id):
     try:
         payload = Security.get_payload_token(request.headers)
         service_code = payload.get("service_code")
-        user_type = payload.get("user_type")
         user_system_central = payload.get("is_user_system_central")
 
-        if user_type == "Administrador": #Means that the user is a bdcentral user_system.
+        if user_system_central: #Means that the user is a bdcentral user_system.
             user_system_id = payload.get("user_id")
         else:
             user_system_id = None #Means that the user is a bdgp user_system.

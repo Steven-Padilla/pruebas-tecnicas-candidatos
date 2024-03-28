@@ -15,8 +15,13 @@ def get_modules():
             payload = Security.get_payload_token(request.headers)
             user_system_central = payload.get("is_user_system_central")
             service_code = payload.get("service_code")
+
+            if user_system_central: #Means that the user is a bdcentral user_system.
+                user_system_id = payload.get("user_id")
+            else:
+                user_system_id = None #Means that the user is a bdgp user_system.
             
-            modules = ModuleService.get_modules(user_system_central, service_code)
+            modules = ModuleService.get_modules(user_system_id, service_code)
             
             if len(modules) > 0:
                 return jsonify({'data': modules, 'success': True})
