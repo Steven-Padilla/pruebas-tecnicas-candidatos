@@ -1,5 +1,5 @@
 from typing import Optional, Union, Any
-from orm_models import Courts, Sport
+from orm_models import CourtCharacteristic, CourtSize, CourtType, Courts, Sport
 from src.database.db import get_connection_servicecode_orm # Databas
 from src.utils.errors.CustomException import CustomException, MissingDataException # Errors
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
@@ -44,7 +44,7 @@ class CourtService():
             service_code (int): The service code for database connection.
 
         Returns:
-            list: A list containing the court information in a dictionary.
+            dict: A dictionary containing the court information.
 
         Raises:
             CustomException: If an error occurs during the retrieval process or if the court is not found.
@@ -63,10 +63,6 @@ class CourtService():
                 sport_name = cls.get_sport_name(court.sport)
 
                 court_json = court.to_json(sport_name)
-
-                
-
-                
 
                 return court_json
         except CustomException as ex:
@@ -138,7 +134,7 @@ class CourtService():
     def update_court(cls, court_id: int, service_code: int, name: Optional[str] = None, address: Optional[str] = None, 
         active: Optional[int] = None, enable_reservation_app: Optional[int] = None, color: Optional[str] = None, 
         image: Optional[str] = None, id_zone_size: Optional[int] = None, id_sport: Optional[int] = None, id_court_type: Optional[int] = None, 
-        id_court_caracteristic: Optional[int] = None) -> dict:
+        id_court_characteristics: Optional[int] = None) -> dict:
         """
         Update court information in the 'zonas' table.
 
@@ -174,12 +170,13 @@ class CourtService():
                 
                 sport_name = cls.get_sport_name(court.sport)
 
-                cls.update_court_attributes(name, address, active, enable_reservation_app, color, image, id_zone_size, id_sport, id_court_type, id_court_caracteristic, court)
+                cls.update_court_attributes(name, address, active, enable_reservation_app, color, image, id_zone_size, id_sport, id_court_type, id_court_characteristics, court)
 
                 db_session.commit()
 
                 return {'data': court.to_json(sport_name), 'success': True}
         except CustomException as ex:
+            print(f'CourtRoutes.py - update_court() - Error: {str(ex)}')
             raise CustomException(ex)
 
     @classmethod
@@ -245,6 +242,102 @@ class CourtService():
                 return {'message': 'Cancha eliminada exitosamente', 'success': True}
         except CustomException as ex:
             raise CustomException(ex)
+        
+    @classmethod
+    def get_sports_catalog(cls) -> list:
+        """
+        Retrieve a list of sports catalog.
 
+        Returns:
+            list: A list containing dictionaries representing the sports catalog.
 
+        Raises:
+            CustomException: If an error occurs during the retrieval process.
+        """
+        try:
+            sports: list[Sport] = Sport.query.filter(Sport.status == 1).all()
+            
+            json_response = [sport.to_dict() for sport in sports]
+
+            return json_response
+        except CustomException as ex:
+            raise CustomException(ex)
+
+    @classmethod
+    def get_court_type_catalog(cls, service_code: int) -> list:
+        """
+        Retrieve a list of court type catalog.
+        
+        Args:
+            service_code (int): The service code for database connection.
+        
+        Returns:
+            list: A list containing dictionaries representing the court type catalog
+        
+        Raises:
+            CustomException: If an error occurs during the retrieval process.
+        """
+        try:
+            engine = get_connection_servicecode_orm(service_code)
+            with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
+                db_session: Session
+
+                court_types: list[CourtType] = db_session.query(CourtType).all()
+                catalog = [ct.to_dict() for ct in court_types]
+
+                return catalog
+        except CustomException as ex:
+            raise CustomException(ex)
+    
+    @classmethod
+    def get_court_size_catalog(cls, service_code: int) -> list:
+        """
+        Retrieve a list of court size catalog.
+        
+        Args:
+            service_code (int): The service code for database connection.
+        
+        Returns:
+            list: A list containing dictionaries representing the court size catalog
+        
+        Raises:
+            CustomException: If an error occurs during the retrieval process.
+        """
+        try:
+            engine = get_connection_servicecode_orm(service_code)
+            with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
+                db_session: Session
+
+                court_sizes: list[CourtSize] = db_session.query(CourtSize).all()
+                catalog = [cs.to_dict() for cs in court_sizes]
+
+                return catalog
+        except CustomException as ex:
+            raise CustomException(ex)
+    
+    @classmethod
+    def get_court_characteristic_catalog(cls, service_code: int) -> list:
+        """
+        Retrieve a list of court characteristic catalog.
+        
+        Args:
+            service_code (int): The service code for database connection.
+        
+        Returns:
+            list: A list containing dictionaries representing the court characteristic catalog
+        
+        Raises:
+            CustomException: If an error occurs during the retrieval process.
+        """
+        try:
+            engine = get_connection_servicecode_orm(service_code)
+            with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
+                db_session: Session
+
+                characteristics: list[CourtCharacteristic] = db_session.query(CourtCharacteristic).all()
+                catalog = [c.to_dict() for c in characteristics]
+
+                return catalog
+        except CustomException as ex:
+            raise CustomException(ex)
 

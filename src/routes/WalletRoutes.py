@@ -29,8 +29,7 @@ def get_wallets_by_club():
     except CustomException as ex:
             print(str(ex))
             return CustomException(ex)
-    
-
+   
 @main.route('/balance/', methods=['GET'], strict_slashes=False)
 def get_balance_by_user_id():
     has_access = Security.verify_token(request.headers)
@@ -79,8 +78,7 @@ def save_new_wallet_move():
         user_id=body["user_id"]
         response =WalletService.save_new_balance( service_code,amount,mode,move_type,concept,user_id)
         return response
-        
-
+      
     except CustomException as ex:
         print(str(ex))
         return CustomException(ex)
@@ -90,10 +88,3 @@ def save_new_wallet_move():
     except MissingKeyException as ex:
         print(f'WalletRoutes.py - save_new_wallet_move() - Error: {ex.message}')
         return jsonify({'message': "Ups, algo salió mal", 'success': False})
-
-"""
-TODO: Creación de Módulo "Monedero"
-    - Traer registros de monedero por usuario
-    - Traer balances actuales de monedero por usuario
-    - Guardar movimientos de monedero (Cargo/Abono)
-"""
