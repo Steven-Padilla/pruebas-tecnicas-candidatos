@@ -69,6 +69,8 @@ class WalletService:
         except CustomException as ex:
             print(str(ex))
             return CustomException(ex)
+        
+
     @classmethod
     def save_new_balance(this, service_code,amount,mode,move_type,concept,user_id):
         try:
