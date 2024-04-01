@@ -150,7 +150,7 @@ class Courts(db.Model, SerializerMixin):
     id = Column('idzona', Integer, primary_key=True)
     name = Column('nombre',String(255))
     address = Column('direccion',String(45))
-    active = Column('cancha_activa',Integer, server_default="1", comment='0.-inactivo\t\\n1.-activo')
+    active = Column('cancha_activa',Integer, server_default="1", comment='0.-inactivo\t\\n1.-activo\t\\n2.-Eliminada')
     enable_reservation_app = Column('habilitar_reservas_app',Integer, comment='0.-inactivo\t\\n1.-activo')
     color = Column('color',String(45))
     configuration_id = Column('idzonasconfiguracion',ForeignKey('zonasconfiguracion.idzonasconfiguracion'), index=True, server_default=text("'0'"))
