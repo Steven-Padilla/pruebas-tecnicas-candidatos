@@ -37,11 +37,19 @@ class ProfilePermissionsService:
                 with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
                     # Type annotation for db_session
                     db_session: Session
-
+                    
                     permission = db_session.query(Permission).filter_by(module_menu_id = submodule_id, profile_id = profile_id, admin = 1).first()
 
             if permission is None:
-                return {}
+                return  {
+                    "admin": 1,
+                    "delete": 0,
+                    "edit": 0,
+                    "id": -1,
+                    "insert": 0,
+                    "module_menu_id": submodule_id,
+                    "profile_id": profile_id
+                }
 
             return permission.to_dict(rules=("-module_menu","-profile"))
         except CustomException as ex:

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException # Errors
+from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException # Errors
 from src.utils.Security import Security # Security
 from src.services.CourtService import CourtService# Groups
 

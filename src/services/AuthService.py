@@ -45,6 +45,11 @@ class AuthService():
                     if club.status != 1: #Club existente pero sin servicio
                         return {"message": "El club vinculado a esta cuenta está fuera de servicio", "success": False}
                     club_name = club.name
+            else:
+                clients_service_codes: list[tuple] = Enterprise.query.with_entities(Enterprise.service_code).all()
+                clients_service_codes: list[int] = [code for (code,) in clients_service_codes] #se extrae de las tuplas
+                if service_code not in clients_service_codes:
+                    raise MissingDataException(Enterprise.__tablename__, get_db_name_app())
 
             if user is None: #Cuenta registrada por el club (cliente) por lo que estará fuera de la central
                 user_type = ""

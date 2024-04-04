@@ -14,7 +14,7 @@ def login():
         username = request.json['username']
         password = request.json['password']
     
-        response = AuthService.login_user(username, password, service_code)
+        response = AuthService.login_user(username, password, int(service_code))
 
         return jsonify(response)
         
