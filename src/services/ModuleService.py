@@ -1,5 +1,6 @@
 from typing import Any, Union
-from orm_models import Module, ModuleMenu, Profile, UsersSystem
+from orm_models import Module, ModuleMenu, Profile
+from src.models import UsersSystem
 from src.database.db import get_connection_servicecode_orm
 from src.utils.Text import get_db_name_app
 from src.utils.errors.CustomException import CustomException, MissingDataException

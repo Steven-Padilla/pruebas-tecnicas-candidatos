@@ -7,7 +7,7 @@ from src.utils.Text import get_db_name_app
 from src.utils.errors.CustomException import CustomException, MissingDataException # Errors
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from extensions import db
-from models import UsersSystem, Enterprise
+from src.models import UsersSystem, Enterprise
 
 class AuthService():
     @classmethod
