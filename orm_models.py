@@ -5,41 +5,6 @@ from extensions import db
 from sqlalchemy import CHAR, Column, DateTime, Float, ForeignKey, Integer, LargeBinary, String, TIMESTAMP, Text, TypeDecorator, cast, func, text, BLOB, type_coerce 
 from sqlalchemy.orm import relationship
 
-
-my_key = "B!1w8*NAtS3DUM1T^%kvhUI*S^_"
-
-
-class CustomBLOB(TypeDecorator):
-    impl = LargeBinary
-    cache_ok = True
-
-    def bind_expression(self, bindvalue):
-        return func.aes_encrypt(
-            type_coerce(bindvalue, CHAR()), func.sha2(my_key, 512),
-        )
-
-    def column_expression(self, col):
-        return cast(
-            func.aes_decrypt(col, func.sha2(my_key, 512),),
-            CHAR(),
-        )
-
-class UsersSystem(db.Model, SerializerMixin): 
-    __tablename__ = "usuarios_sistema"
-
-    id = Column("id",Integer, primary_key=True)
-    username = Column("username",String(30), nullable=False)
-    password = Column("password", CustomBLOB, nullable=False)
-    user_type_id = Column("user_type", Integer, ForeignKey('tipousuario.idtipousuario'), index=True)
-    profile_id = Column("profile",Integer, ForeignKey('perfiles.idperfiles'), index=True)
-    name = Column("name",String(255), nullable=False)
-    lastname = Column("paterno",String(255), nullable=False)
-    secondsurname = Column("materno",String(255), nullable=False)
-    service_code = Column("service_code", Integer, nullable=False)
-
-    user_type = relationship("UserType")
-    profile = relationship("Profile")
-
 class UsersCentral(db.Model, SerializerMixin):
     __tablename__ = 'usuarios_central'
     serialize_rules = ('-reservations.reservations',)
@@ -240,26 +205,7 @@ class ScheduleZoneConfiguration(db.Model, SerializerMixin):
     horainicial = Column(String(45))
     horafinal = Column(String(45))
 
-class Enterprise(db.Model, SerializerMixin):
-    __tablename__ = "empresa"
 
-    id = Column("idempresa", Integer, primary_key=True, autoincrement=True)
-    name = Column("nombre", String(255))
-    telephone = Column("telefono", String(45))
-    cellphone = Column("celular", String(100))
-    latitude = Column("latitud", String(255))
-    longitude = Column("longitud", String(255))
-    postal_code = Column("codigopostal", String(45))
-    country = Column("pais", String(45))
-    state = Column("estado", String(45, collation="utf8mb3_general_ci"))
-    city = Column("municipio", String(45, collation="utf8mb3_general_ci"))
-    settlement = Column("asentamiento", String(45))
-    neighborhood = Column("colonia", String(45, collation="utf8mb3_general_ci"))
-    address = Column("direccion", String(45, collation="utf8mb3_general_ci"))
-    status = Column("estatus", Integer)
-    service_code = Column("codserv", Integer)
-    image = Column("imagen", String(255))
-    reserve_day_limit = Column("limitediasreserva", Integer)
 
 class ModuleMenu(db.Model, SerializerMixin):
     __tablename__ = "modulos_menu"
