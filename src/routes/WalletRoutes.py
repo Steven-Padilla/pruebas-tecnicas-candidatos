@@ -29,6 +29,24 @@ def get_wallets_by_club():
     except CustomException as ex:
             print(str(ex))
             return CustomException(ex)
+    
+@main.route('/modes', methods=['GET'], strict_slashes=False)
+def get_wallet_modes():
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    try: 
+            
+        response=WalletService.get_wallets_modes()
+        return response
+    
+    except MissingKeyException as ex:
+        print(f'WalletRoutes.py - get_wallet_modes() - Error: {ex.message}')
+        return jsonify({'message': "Ups, algo salió mal", 'success': False})
+    except CustomException as ex:
+            print(str(ex))
+            return CustomException(ex)
    
 @main.route('/balance/', methods=['GET'], strict_slashes=False)
 def get_balance_by_user_id():

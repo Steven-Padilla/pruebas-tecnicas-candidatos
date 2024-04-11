@@ -1,5 +1,7 @@
+from ast import mod
 from flask import Blueprint, request, jsonify
 from src.database.db import get_connection_servicecode_orm
+from src.models import WalletModes
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException 
 from orm_models import Users, UsersCentral, DigitalWallet
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -41,6 +43,23 @@ class WalletService:
 
 
             return jsonify({'data': wallets, 'success': True})
+
+        except CustomException as ex:
+            print(str(ex))
+            return CustomException(ex)
+    @classmethod
+    def get_wallets_modes (this):
+        try:
+            modes=[]
+            #Obtener todos los usuarios de la bd del club
+            items = WalletModes.query.filter(WalletModes.status).all()
+            print(items)
+
+            if not items:
+                return jsonify({'data': [], 'success': True})
+                
+            modes=[mode.to_dict() for mode in items]
+            return jsonify({'data': modes, 'success': True})
 
         except CustomException as ex:
             print(str(ex))
