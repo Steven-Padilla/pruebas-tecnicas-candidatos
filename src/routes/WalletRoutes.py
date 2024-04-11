@@ -106,3 +106,30 @@ def save_new_wallet_move():
     except MissingKeyException as ex:
         print(f'WalletRoutes.py - save_new_wallet_move() - Error: {ex.message}')
         return jsonify({'message': "Ups, algo salió mal", 'success': False})
+    
+@main.route('/receipts/<int:user_id>', methods=['GET'], strict_slashes=False) #App endpoint
+def get_wallet_receipts_by_user_id(user_id):
+    # has_access = Security.verify_token(request.headers)
+    has_access = True
+
+    if not has_access:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+
+    try:
+        service_code_key = 'service_code'
+        if service_code_key not in request.args:
+            raise MissingKeyException(service_code_key)
+        
+        if request.args.get(service_code_key).isdigit():
+            service_code = int(request.args.get(service_code_key))
+        else:
+            raise DataTypeException(service_code_key, int)
+    
+        response = WalletService.get_wallet_receipts_by_user_id(service_code, user_id)
+        
+        return jsonify(response)
+    except CustomException as ex:
+        print(f'WalletRoutes.py - get_wallet_receipts_by_user_id() - Error: {str(ex)}')
+        return jsonify({'message': "Ups, algo salió mal", 'success': False})
+    

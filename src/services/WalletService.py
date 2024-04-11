@@ -1,4 +1,3 @@
-from ast import mod
 from flask import Blueprint, request, jsonify
 from src.database.db import get_connection_servicecode_orm
 from src.models import WalletModes
@@ -117,3 +116,31 @@ class WalletService:
         finally:
             if db_session:
                 db_session.close()
+    
+    @classmethod
+    def get_wallet_receipts_by_user_id(cls, service_code: int, user_id: int) -> dict:
+        try:
+            engine = get_connection_servicecode_orm(service_code)
+            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+            
+            user = db_session.query(Users).get(user_id)
+
+            if user is None:
+                return {'data': {'balance':0.00, 'movements': []}, 'success': True}
+
+            items = db_session.query(DigitalWallet).filter_by(user_id=user_id).all()
+
+            if not items:
+                return {'data': {'balance':0.00, 'movements': []}, 'success': True}
+            
+            item_list = [
+                    item.to_dict(rules=('-mode','-usuarios')) for item in items
+                ]
+            
+            json_response = {'data': {'balance':user.wallet_balance, 'movements': item_list}, 'success': True}
+            return json_response
+        except CustomException as e:
+            print(str(e))
+            return CustomException(e)  
+        finally:
+            if db_session: db_session.close()
