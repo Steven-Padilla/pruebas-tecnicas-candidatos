@@ -150,9 +150,6 @@ def get_receipts_by_user_id(user_id):
         engine = get_connection_servicecode_orm(service_code)
         db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
-        print(service_code)
-        print(engine.url.database)
-
         payment_receipts = (
         db_session.query(
             PaymentReceipt,
@@ -227,9 +224,9 @@ def get_receipts_by_user_id(user_id):
                 payment_list[idnotapago] = []
 
             payment_list[idnotapago].append({
-                'user_id': payment.user_id,
+                'user_id': payment.user_id if payment else user_id, #si no existe pago es porque fue un paquete
                 'id':payment.id if payment else packages.idpaquete if packages else None,
-                'type': payment.type,
+                'type': payment.type if payment else None, #si no existe pago no se puede saber que tipo de pago fue
                 'description': description_value,
                 'amount': amount,
                 'discounts': discount_list,
