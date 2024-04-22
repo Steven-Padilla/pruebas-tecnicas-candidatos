@@ -19,7 +19,7 @@ def get_module_menus():
             else:
                 return jsonify({'data': [], 'success': True})
         except Exception as ex:
-            print(str(ex))
+            print(f'ModuleMenuRoutes.py - get_module_menus - {str(ex)}')
             return jsonify({'message': "Error", 'success': False})
     else:
         response = jsonify({'message': 'Unauthorized', 'success': False})

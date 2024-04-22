@@ -1,13 +1,13 @@
 from typing import Any, Union
 from sqlalchemy import func, cast
 from sqlalchemy.dialects.mysql import CHAR
-from orm_models import UsersSystem, Enterprise
 from src.database.db import get_connection_servicecode_orm # Database
 from src.utils.Security import Security
 from src.utils.Text import get_db_name_app
 from src.utils.errors.CustomException import CustomException, MissingDataException # Errors
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from extensions import db
+from src.models import UsersSystem, Enterprise
 
 class AuthService():
     @classmethod
@@ -45,6 +45,11 @@ class AuthService():
                     if club.status != 1: #Club existente pero sin servicio
                         return {"message": "El club vinculado a esta cuenta está fuera de servicio", "success": False}
                     club_name = club.name
+            else:
+                clients_service_codes: list[tuple] = Enterprise.query.with_entities(Enterprise.service_code).all()
+                clients_service_codes: list[int] = [code for (code,) in clients_service_codes] #se extrae de las tuplas
+                if service_code not in clients_service_codes:
+                    raise MissingDataException(Enterprise.__tablename__, get_db_name_app())
 
             if user is None: #Cuenta registrada por el club (cliente) por lo que estará fuera de la central
                 user_type = ""

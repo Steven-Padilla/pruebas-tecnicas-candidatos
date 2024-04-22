@@ -26,7 +26,7 @@ class CourtService():
                 # Type annotation for db_session
                 db_session: Session
 
-                courts = db_session.query(Courts).all()
+                courts = db_session.query(Courts).filter(Courts.active != 2).all()
 
                 items = [court.to_json(cls.get_sport_name(court.sport)) for court in courts]
 
@@ -236,7 +236,7 @@ class CourtService():
                 if court is None:
                     return {'message': 'La cancha no existe', 'success': True}
                 
-                db_session.delete(court)
+                court.active = 2 #Deleted status value
                 db_session.commit()
 
                 return {'message': 'Cancha eliminada exitosamente', 'success': True}

@@ -25,7 +25,7 @@ class ModuleMenuService:
                 db_session: Session
                 modules = Module.query.filter_by(admin = 2, status=1).all()
                 module_ids_list = [m.id for m in modules] #ids de modulos activos
-                module_menu_club = db_session.query(ModuleMenuClub).where(ModuleMenuClub.module_id.in_(module_ids_list)).all()
+                module_menu_club = db_session.query(ModuleMenu).where(ModuleMenu.module_id.in_(module_ids_list)).all()
                 
                 module_menu_list = [cls.update_module_menu_data(mmc.to_dict(), cls.get_model_menu_from_central(mmc.module_id)) for mmc in module_menu_club] #menus de modulos del club que estan activos
                 return module_menu_list

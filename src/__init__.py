@@ -14,6 +14,7 @@ from .routes import UserRoutes
 from .routes import UserTypeRoutes
 from .routes import WalletRoutes
 from .routes import CustomerRoutes
+from .routes import PaymentReceiptsRoute
 
 app = Flask(__name__)
 
@@ -33,5 +34,6 @@ def init_app(config):
     app.register_blueprint(CustomerRoutes.main, url_prefix='/customer')
     app.register_blueprint(UserTypeRoutes.main, url_prefix='/user_types')
     app.register_blueprint(WalletRoutes.main, url_prefix='/wallet')
+    app.register_blueprint(PaymentReceiptsRoute.main, url_prefix='/receipts')
 
     return app

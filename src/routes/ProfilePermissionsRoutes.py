@@ -29,18 +29,16 @@ def get_permission_module_by_profile_id():
             data = request.args
             payload = Security.get_payload_token(request.headers)
 
-            
-
             service_code = payload.get("service_code")
             is_user_system_central = payload.get("is_user_system_central")
             submodule_id = data['submodule_id']
             profile_id = data['profile_id']
 
-            if submodule_id.isdigit():
-                submodule_id = int(submodule_id)
-
             if profile_id.isdigit():
                 profile_id = int(profile_id)
+
+            if submodule_id.isdigit():
+                submodule_id = int(submodule_id)
 
             permission = ProfilePermissionsService.get_permission_module_by_profile_id(submodule_id, profile_id, service_code, is_user_system_central)
             return jsonify({'data': permission, 'success': True})

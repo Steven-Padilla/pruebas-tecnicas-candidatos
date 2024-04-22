@@ -155,3 +155,64 @@ def user_example(user_id):
     except CustomException as e:
         print(f'Error: {str(e)}')
         return jsonify({'message': f'Error: {str(e)}', 'success': False})
+
+@main.route('/filtered/user/<int:user_id>', methods=['GET'], strict_slashes=False)
+def get_reservations_by_user(user_id):
+    try:
+        # Extract values from request.args
+        page = 0
+        per_page = 0
+        include_cancelled = 0
+        has_next = False
+
+        per_page = int(request.args.get('per_page')) or 10
+        page = int(request.args.get('page')) or 1
+        include_cancelled = int(request.args.get('include_cancelled')) or 0
+        service_code = int(request.args.get('service_code'))
+
+        engine_club = get_connection_servicecode_orm(service_code)
+        db_session_club = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine_club))
+        
+        # Query reservations by user_id from Reservation table with optional status filter
+        reservations_reservation_query = Reservation.query.filter_by(user_id=user_id)
+            
+        if include_cancelled == 0:
+            reservations_reservation_query = reservations_reservation_query.filter(Reservation.status_id != 3)
+
+        has_next = False 
+        pagination = reservations_reservation_query.with_session(db_session_club).paginate(page=page,per_page = per_page, error_out=False)
+        reservations_reservation = pagination.items
+        has_next = pagination.has_next
+
+        # Query reservations by user_id from ReservationPlayers table with optional status filter
+        reservations_players_query = (
+            db.session.query(Reservation)
+                .join(ReservationPlayers, Reservation.id == ReservationPlayers.reservation_id)
+                .filter(
+                    ReservationPlayers.user_id == user_id,
+                    ReservationPlayers.acceptance_status == 1,
+                    Reservation.user_id != user_id 
+                )
+        )
+
+        reservations_players = reservations_players_query.with_session(db_session_club).paginate(page=page,per_page = per_page, error_out=False).items
+        # Combine the results into a list
+        reservations = list(reservations_reservation) + list(reservations_players)
+
+        # Order the combined list by date and start_time
+        ordered_reservations = sorted(reservations, key=lambda x: (x.date, x.start_time),reverse=True)
+
+        # Check if user has reservations
+        if not ordered_reservations:
+            return jsonify({'success': True, 'data':[], 'message': 'User has no reservations.'})
+            
+        reservations_json = [reservation.to_dict() for reservation in ordered_reservations]
+        # Return the JSON response with 'data' instead of 'reservations'
+        return jsonify({'success': True,  'has_next': has_next, 'data': reservations_json, }), 200
+
+    except Exception as e:
+        print(f"Error processing request for user_id {user_id}: {str(e)}")
+        # Return a generic error response
+        return {'success': False, 'message': 'An error occurred while processing the reservation list.'}, 200
+    finally:
+        db_session_club.close()
