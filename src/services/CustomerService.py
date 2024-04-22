@@ -139,17 +139,20 @@ class CustomerService:
                 db_session: Session
                 
                 new_user = Users(wallet_balance=wallet_balance, id=id)
-                new_user_interprise = UserEnterprise(user_id=id, club_id=club.id, user_type_id=3)
-                
-                # Establecer la relación bidireccional
-        
-                db.session.add(new_user_interprise)
-                # Agregar los objetos a la sesión
+                user_enterprise: Union[UserEnterprise, Any] = UserEnterprise.query.filter_by(user_id=id, club_id=club.id, user_type_id=3).first()
+                if user_enterprise is None:
+
+                    new_user_interprise = UserEnterprise(user_id=id, club_id=club.id, user_type_id=3)
+                    # Establecer la relación bidireccional
+                    db.session.add(new_user_interprise)
+                    # Agregar los objetos a la sesión
+                    db.session.flush()
+                    # Confirmar los cambios en la sesión
+
                 db_session.add(new_user)
-        
-                # Confirmar los cambios en la sesión
                 db_session.commit()
-                db.session.commit()
+
+
         except CustomException as ex:
             print(str(ex))
             return CustomException(ex) 
@@ -159,8 +162,8 @@ class CustomerService:
         try:
             new_user = UsersCentral(cellphone=cellphone, user=user, name=name, lastname=lastname)
             db.session.add(new_user)
-            db.session.commit()
-            return new_user.id
+            db.session.flush()
+            return new_user
         except CustomException as ex:
             print(str(ex))
             return CustomException(ex) 
@@ -169,14 +172,18 @@ class CustomerService:
     def save_customer(cls, service_code, user, name, lastname,cellphone, ):
         try:
             wallet_balance = 0.0
-            user_central = UsersCentral.query.filter_by(cellphone=cellphone).first()
+            user_central : Union[UsersCentral, Any] = UsersCentral.query.filter_by(cellphone=cellphone).first()
             if user_central is None:
-                id = cls.create_user_central(cellphone, user, name, lastname)
-                cls.create_user_in_club( service_code, wallet_balance, id)
-                return {"message": "Cliente registrado en la base central y en el club"}
+                customer = cls.create_user_central(cellphone, user, name, lastname)
+                cls.create_user_in_club( service_code, wallet_balance, customer.id)
+                db.session.commit()
+                if customer:
+                    return customer.as_dict()
+                else: return {}
             id = user_central.id
             cls.create_user_in_club(service_code, wallet_balance, id)
-            return {"message": "Cliente registrado en el club"}
+            db.session.commit()
+            return user_central.as_dict()
         except CustomException as ex:
             print(str(ex))
             return CustomException(ex) 

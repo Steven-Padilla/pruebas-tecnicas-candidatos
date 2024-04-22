@@ -319,7 +319,7 @@ class UserType(db.Model, SerializerMixin):
     is_costumer = Column("cliente", Integer)
 
 class UserEnterprise(db.Model, SerializerMixin):
-    tablename = "usuario_empresa"
+    __tablename__ = "usuario_empresa"
 
     id = Column('idempresausuario',Integer, primary_key=True, autoincrement=True)
     user_id = Column('idusuario',Integer, ForeignKey('usuarios_central.idusuarios'), nullable=False)

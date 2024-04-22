@@ -138,7 +138,7 @@ def register_customer():
         json_response = CustomerService.save_customer(service_code,user,name,last_name,cellphone,)
         
 
-        return {"message": json_response, "success": True}, 200
+        return {"data": json_response, "success": True}, 200
     except CustomException as e:
         print(f'Error: {str(e)}')
         return jsonify({'message': f'Error: {str(e)}', 'success': False})
