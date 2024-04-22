@@ -109,7 +109,7 @@ class UsersCentral(db.Model, SerializerMixin):
     
     def as_dict(self):
         user_dict = self.to_dict(
-            only=('id','name','lastname','username','email','phone','password')
+            only=('id','name','lastname','user','email','cellphone','password')
         )
 
         return user_dict
