@@ -74,7 +74,7 @@ class UsersCentral(db.Model, SerializerMixin):
     
     def as_dict(self):
         user_dict = self.to_dict(
-            only=('id','name','lastname','username','email','phone','password')
+            only=('id','name','lastname','user','email','cellphone','password')
         )
 
         return user_dict
@@ -263,3 +263,15 @@ class UserType(db.Model, SerializerMixin):
     default = Column("predeterminado", Integer)
     access_system = Column("sistema", Integer)
     is_costumer = Column("cliente", Integer)
+
+class UserEnterprise(db.Model, SerializerMixin):
+    __tablename__ = "usuario_empresa"
+
+    id = Column('idempresausuario',Integer, primary_key=True, autoincrement=True)
+    user_id = Column('idusuario',Integer, ForeignKey('usuarios_central.idusuarios'), nullable=False)
+    club_id = Column('idempresa',Integer, ForeignKey('empresa.idempresa'), nullable=False)
+    user_type_id = Column('idtipousuario',Integer, ForeignKey('tipousuario.idtipousuario'), nullable=False)
+
+    user = relationship("UsersCentral")
+    club = relationship("Enterprise")
+    user_type = relationship("UserType")
