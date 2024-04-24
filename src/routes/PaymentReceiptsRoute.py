@@ -10,9 +10,59 @@ import pytz
 
 main = Blueprint('Receipts_blueprint', __name__)
 
+@main.route('/getAll', methods=['GET'], strict_slashes=False)
+def get_receipts_v2():
+    has_access=True
+    if has_access:
+        try:
+            service_code = request.args['service_code']
+            engine = get_connection_servicecode_orm(service_code)
+            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+            recipes=(
+                db_session.query(
+                PaymentReceipt,
+                PaymentReceiptDescription,
+                Payment,
+                PaymentDiscount,
+                Discount,
+                Packages,
+            )
+                .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)
+                .outerjoin(Payment, PaymentReceiptDescription.idpago == Payment.id)
+                .outerjoin(PaymentDiscount, PaymentDiscount.idpago == PaymentReceiptDescription.idpago)
+                .outerjoin(Discount, Discount.iddescuento == PaymentDiscount.iddescuento)
+                .outerjoin(Packages, Packages.idpaquete == PaymentReceiptDescription.idpaquete)).limit(10).all() 
+            recipes_dics=[]
+            
+            for receipt, description, payment, discount, discount_name, packages in recipes:
+                print(description.to_dict())
+                recipes_dics.append({
+                    "idRecibo":receipt.idnotapago,
+                    "idUsuario":receipt.idusuario,
+                    "folio":receipt.folio,
+                    "total":receipt.total,
+                    "descripcion":description.descripcion,
+                    "fecha":receipt.fecha,
+                    "IdtipoPago":receipt.idtipopago,
+                    "tipoPago":receipt.tipopago,
+                    "estatus":receipt.estatus,
+                })
+                
+            response = jsonify({'data': recipes_dics, 'success': True, "version":"V2"})
+            return response
+
+        except CustomException as ex:
+            print(str(ex))
+            return CustomException(ex)
+    else:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+
+
 @main.route('/', methods=['POST'], strict_slashes=False)
 def get_receipts():
-    has_access = Security.verify_token(request.headers)
+    # has_access = Security.verify_token(request.headers)
+    has_access=True
     if has_access:
         try:
             user = []
@@ -48,6 +98,7 @@ def get_receipts():
                 .filter(PaymentReceiptDescription.idpago == PaymentDiscountMembership.id_payment )
                 .join(Membership, Membership.id_membership == PaymentDiscountMembership.id_membership)
             ).all()
+            print(f'Eston son los menbership: {memberships}')
             
             memberships_dict = {idnotapago: {'amount':round(float(descuentomembresia),2), 'description':title}
                 for idnotapago,idpago,descuentomembresia,title in memberships}
@@ -96,13 +147,15 @@ def get_receipts():
             for item in items:
                 fechaaux = item[0].fecha.replace(tzinfo=pytz.utc)
                 formatted_date = fechaaux.strftime("%Y-%m-%d %H:%M:%S")
-                user = dict.get(item[0].idusuario,None)
+                newUser = dict.get(item[0].idusuario,None)
                 
-                if user is not None:
+                
+                if newUser is not None:
                     user.append({
                         'id': item[0].idnotapago,
+                        'user_id':item[0].idusuario,
                         'folio': item[0].folio,
-                        'name': user['name'],
+                        'name': newUser['name'],
                         'payments': result_dict[item[0].idnotapago],
                         'date': formatted_date,
                         'payment_type': item[0].tipopago,
@@ -127,8 +180,8 @@ def get_receipts():
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
 
-@main.route('/<int:user_id>', methods=['GET'], strict_slashes=False)
-def get_receipts_by_user_id(user_id):
+@main.route('/<int:receipt_id>/<int:user_id>', methods=['GET'], strict_slashes=False)
+def get_receipts_by_user_id(receipt_id, user_id):
     # has_access = Security.verify_token(request.headers)
     has_access = True
 
@@ -159,14 +212,15 @@ def get_receipts_by_user_id(user_id):
             Discount,
             Packages,
         )
-            .filter(PaymentReceipt.idusuario == user_id)
+            .filter(PaymentReceipt.idnotapago == receipt_id)
             .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)
             .outerjoin(Payment, PaymentReceiptDescription.idpago == Payment.id)
             .outerjoin(PaymentDiscount, PaymentDiscount.idpago == PaymentReceiptDescription.idpago)
             .outerjoin(Discount, Discount.iddescuento == PaymentDiscount.iddescuento)
             .outerjoin(Packages, Packages.idpaquete == PaymentReceiptDescription.idpaquete)
         ).all()
-
+        # user_id=321
+        print(f'Recibos: ===============> {payment_receipts}')
         memberships = (
             db_session.query(
                 PaymentReceiptDescription.idnotapago,
