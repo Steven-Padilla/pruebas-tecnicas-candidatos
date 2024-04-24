@@ -11,7 +11,7 @@ from src.models import UsersSystem, Enterprise
 
 class AuthService():
     @classmethod
-    def login_user(cls, username: str, password: str, service_code: int) -> dict:
+    def     login_user(cls, username: str, password: str, service_code: int) -> dict:
         """
         Get user (customer) information from 'users' table based on access credentials.
 

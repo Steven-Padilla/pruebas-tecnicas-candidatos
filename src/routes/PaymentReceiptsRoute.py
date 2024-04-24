@@ -36,9 +36,14 @@ def get_receipts_v2():
             
             for receipt, description, payment, discount, discount_name, packages in recipes:
                 print(description.to_dict())
+                user=UsersCentral.query.filter_by(id=receipt.idusuario).first()
+                userName="Sin nombre"
+                if user:
+                    userName=user.fullname()
                 recipes_dics.append({
                     "idRecibo":receipt.idnotapago,
                     "idUsuario":receipt.idusuario,
+                    "nombreUsuario":userName,
                     "folio":receipt.folio,
                     "total":receipt.total,
                     "descripcion":description.descripcion,
