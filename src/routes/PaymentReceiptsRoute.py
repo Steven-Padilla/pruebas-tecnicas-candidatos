@@ -48,12 +48,12 @@ def get_receipts_v2():
                     "total":receipt.total,
                     "descripcion":description.descripcion,
                     "fecha":receipt.fecha,
-                    "IdtipoPago":receipt.idtipopago,
+                    "idTipoPago":receipt.idtipopago,
                     "tipoPago":receipt.tipopago,
                     "estatus":receipt.estatus,
                 })
                 
-            response = jsonify({'data': recipes_dics, 'success': True, "version":"V2"})
+            response = jsonify({'data': recipes_dics, 'success': True})
             return response
 
         except CustomException as ex:
