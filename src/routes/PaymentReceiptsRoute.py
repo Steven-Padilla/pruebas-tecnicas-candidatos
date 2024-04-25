@@ -10,6 +10,56 @@ import pytz
 
 main = Blueprint('Receipts_blueprint', __name__)
 
+@main.route('/getSingle', methods=['GET'], strict_slashes=False)
+def get_single_receipts_v2():
+    has_access=True
+    if has_access:
+        try:
+            service_code = request.args['service_code']
+            receipt_id = request.args['receipt_id']
+            engine = get_connection_servicecode_orm(service_code)
+            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+            receipt=(
+                db_session.query(
+                    PaymentReceipt,
+                    PaymentReceiptDescription, 
+                    PaymentDiscount,
+                    )
+                    .where(PaymentReceipt.idnotapago == receipt_id)
+                    .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)
+                    .outerjoin(PaymentDiscount, PaymentDiscount.idnotapago == PaymentReceiptDescription.idnotapago)
+                    .first())
+                    # .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)
+            membershipPay=db_session.query(PaymentDiscountMembership).where(PaymentDiscountMembership.id_payment_receipt==receipt_id).first()
+
+
+            [receiptInfo, description, discount]  = receipt
+            membershipDiscount=int(membershipPay.amount_to_discount) if membershipPay else None 
+            receiptData={
+                "idNotaPago":receiptInfo.idnotapago,
+                "descripcion":description.descripcion,
+                "fecha":receiptInfo.fecha,
+                "folio":receiptInfo.folio,
+                "fechaFactura":receiptInfo.fechafactura,
+                "folioFactura":receiptInfo.foliofactura,
+                "requiereFactura":receiptInfo.requierefactura,
+                "total":receiptInfo.total,
+                "subTotal":receiptInfo.subtotal,
+                "comision":receiptInfo.comisiontotal,
+                "descuento":None if not discount else int(discount.montoadescontar),
+                "montoMonedero":receiptInfo.montomonedero,
+                "metodoPago":receiptInfo.tipopago,
+                "estatus":receiptInfo.estatus,
+                "montoMembresia":membershipDiscount,
+            }
+            return jsonify({'data': receiptData, 'success': True})
+        except CustomException as ex:
+            print(str(ex))
+            return CustomException(ex)
+    else:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+
 @main.route('/getAll', methods=['GET'], strict_slashes=False)
 def get_receipts_v2():
     has_access=True
