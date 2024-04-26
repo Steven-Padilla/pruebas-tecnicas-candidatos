@@ -1,8 +1,12 @@
+from datetime import datetime
+import os
 from typing import Optional, Union, Any
 from orm_models import CourtCharacteristic, CourtSize, CourtType, Courts, Sport
 from src.database.db import get_connection_servicecode_orm # Databas
 from src.utils.errors.CustomException import CustomException, MissingDataException # Errors
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
+from decouple import config
+from PIL import Image
 
 class CourtService():
     @classmethod
@@ -14,7 +18,7 @@ class CourtService():
                 service_code (int): The service code for database connection.
 
             Returns:
-                dict: A dictionary containing the court information.
+                list: A list containing the courts information.
 
             Raises:
                 CustomException: If an error occurs during the retrieval process or if the court is not found.
@@ -28,7 +32,7 @@ class CourtService():
 
                 courts = db_session.query(Courts).filter(Courts.active != 2).all()
 
-                items = [court.to_json(cls.get_sport_name(court.sport)) for court in courts]
+                items = [court.to_json(cls.get_sport(court.sport)) for court in courts]
 
                 return items
         except CustomException as ex:
@@ -60,9 +64,9 @@ class CourtService():
                 if court is None:
                     raise MissingDataException(Courts.__tablename__, engine.url.database, id)
                 
-                sport_name = cls.get_sport_name(court.sport)
+                sport = cls.get_sport(court.sport)
 
-                court_json = court.to_json(sport_name)
+                court_json = court.to_json(sport)
 
                 return court_json
         except CustomException as ex:
@@ -113,22 +117,21 @@ class CourtService():
                 db_session.add(new_court)
                 db_session.commit()
 
-                sport_name = cls.get_sport_name(new_court.sport) 
+                sport = cls.get_sport(new_court.sport) 
                 
-                return new_court.to_json(sport_name)
+                return new_court.to_json(sport)
         except Exception as ex:
             print(f'CourtService.py - save_court() - Error: {str(ex)}')
             raise CustomException(ex)
 
     @classmethod
-    def get_sport_name(cls, id_sport):
-        sport = Sport.query.get(id_sport)
+    def get_sport(cls, id_sport: int) -> dict:
+        sport: Union[Sport, Any] = Sport.query.get(id_sport)
 
-        if sport:
-            sport_name = sport.name
-        else:
-            sport_name = ''
-        return sport_name
+        if sport is None:
+            return {}
+        
+        return sport.to_dict()
         
     @classmethod
     def update_court(cls, court_id: int, service_code: int, name: Optional[str] = None, address: Optional[str] = None, 
@@ -168,13 +171,16 @@ class CourtService():
                 if court is None:
                     raise MissingDataException(Courts.__tablename__, engine.url.database, court_id)
                 
-                sport_name = cls.get_sport_name(court.sport)
-
                 cls.update_court_attributes(name, address, active, enable_reservation_app, color, image, id_zone_size, id_sport, id_court_type, id_court_characteristics, court)
 
+                if id_sport is None:
+                    sport = cls.get_sport(court.sport)
+                else:
+                    sport = cls.get_sport(id_sport)
+                    
                 db_session.commit()
 
-                return {'data': court.to_json(sport_name), 'success': True}
+                return {'data': court.to_json(sport), 'success': True}
         except CustomException as ex:
             print(f'CourtRoutes.py - update_court() - Error: {str(ex)}')
             raise CustomException(ex)
@@ -341,3 +347,34 @@ class CourtService():
         except CustomException as ex:
             raise CustomException(ex)
 
+    @classmethod
+    def save_court_image(cls, service_code: int, court_img: Any) -> str:
+        """
+        Save a court image in the corresponding directory and return the name of the saved file.
+
+        Args:
+            service_code (int): The service code that identifies the club's directory.
+            court_img (Any): The court image to be saved.
+
+        Returns:
+            str: The name of the saved file.
+
+        Raises:
+            CustomException: If an error occurs while saving the image.
+        """
+        try:
+            court_dir = os.path.join(config('IMAGE_PATH'), str(service_code), 'canchas')
+
+            if not os.path.exists(court_dir):
+                os.makedirs(court_dir, mode=0o777, exist_ok=True)
+
+            dt = datetime.now()
+            dt_str = dt.strftime('%Y-%m-%d_%H.%M.%S.%f')[:-3]
+            image_path = os.path.join(court_dir, f'{dt_str}.png')
+
+            img = Image.open(court_img)
+            img.save(image_path)
+
+            return f'{dt_str}.png'
+        except Exception as ex:
+            raise CustomException(ex) from ex

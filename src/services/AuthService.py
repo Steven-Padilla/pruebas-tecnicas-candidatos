@@ -1,13 +1,13 @@
 from typing import Any, Union
 from sqlalchemy import func, cast
 from sqlalchemy.dialects.mysql import CHAR
+from orm_models import UsersSystem, Enterprise
 from src.database.db import get_connection_servicecode_orm # Database
 from src.utils.Security import Security
 from src.utils.Text import get_db_name_app
 from src.utils.errors.CustomException import CustomException, MissingDataException # Errors
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from extensions import db
-from src.models import UsersSystem, Enterprise
 
 class AuthService():
     @classmethod
@@ -35,11 +35,13 @@ class AuthService():
                     UsersSystem.username == username,
                     UsersSystem.password == password,
                     UsersSystem.service_code == service_code,
+                    UsersSystem.status == 1,
                 ).first()
             
             if user is not None:
                 user_type = "Administrator"
                 is_user_system_central = True
+                profile_id = user.profile_id
                 if user.user_type.is_costumer == 1: #Es cliente
                     club: Union[Enterprise, Any] = Enterprise.query.filter(Enterprise.service_code == service_code).first()
                     if club.status != 1: #Club existente pero sin servicio
@@ -69,13 +71,15 @@ class AuthService():
                     user: Union[UsersSystem, Any] = db_session.query(UsersSystem).filter(
                         UsersSystem.username == username,
                         UsersSystem.password == password,
+                        UsersSystem.status == 1,
                     ).first()
                     
                 if user is None:
                     raise MissingDataException(UsersSystem.__tablename__, engine.url.database)
                 is_user_system_central = False
+                profile_id = user.profile_id
             
-            token = Security.generate_token(user, service_code, is_user_system_central, user_type)
+            token = Security.generate_token(user, service_code, is_user_system_central, user_type, profile_id)
 
             json_response = {
                 'token': token, 

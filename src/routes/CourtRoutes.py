@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+import os
+from flask import Blueprint, request, jsonify, send_file
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException # Errors
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException # Errors
 from src.utils.Security import Security # Security
 from src.services.CourtService import CourtService# Groups
-
+from decouple import config
 
 main = Blueprint('court_blueprint', __name__)
 
@@ -75,18 +76,11 @@ def save_court():
         body = request.json
         address = body.get('address','')
 
-        required_keys = ['service_code','name', 'active', 'enable_reservation_app', 'color', 'image', 'sport_id', 'type_id', 'characteristics']
-        characteristic_keys = ['size_id', 'characteristic_id']
+        required_keys = ['service_code','name', 'active', 'enable_reservation_app', 'color', 'image', 'sport_id', 'type_id', 'size_id', 'characteristic_id']
 
         for key in required_keys:
             if body.get(key) is None:
                 raise MissingKeyException(missing_key=key)
-            
-        court_caracteristic = body['characteristics']
-
-        for key in characteristic_keys:
-            if court_caracteristic.get(key) is None:
-                raise MissingKeyException(missing_key=f'characteristics.{key}')
 
         service_code = body['service_code']
         name = body['name']
@@ -97,8 +91,8 @@ def save_court():
 
         id_sport = body['sport_id']
         id_court_type = body['type_id']
-        id_zone_size = court_caracteristic['size_id']
-        id_court_caracteristic = court_caracteristic['characteristic_id']
+        id_zone_size = body['size_id']
+        id_court_caracteristic = body['characteristic_id']
 
         if not isinstance(service_code, int):
             raise DataTypeException('service_code', int)
@@ -261,3 +255,34 @@ def get_characteristic_catalog():
     except Exception as e:
         print(f'CourtRoutes.py - get_characteristic_catalog() - Error: {str(e)}')
         return jsonify({'message': "Ups, algo salió mal", 'success': False}) 
+
+@main.route('/save_image', methods=['POST'], strict_slashes=False)
+def save_court_image():
+    has_access = Security.verify_token(request.headers)
+    if has_access == False:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    try:
+        payload = Security.get_payload_token(request.headers)
+        service_code = payload.get("service_code")
+
+        court_img = request.files['img']
+        
+        data = CourtService.save_court_image(service_code, court_img)
+
+        return jsonify({"data": data, "success": True})
+    except Exception as e:
+        print(f'CourtRoutes.py - save_court_image() - Error: {str(e)}')
+        return jsonify({'message': f"{str(e)}", 'success': False})
+
+@main.route('/get_image/<service_code>/<image_name>', methods=['GET'], strict_slashes=False)
+def get_court_image(service_code, image_name):
+    try:
+        image_path = os.path.join(config('IMAGE_PATH'), str(service_code), 'canchas', image_name)
+        if not os.path.exists(image_path):
+            return jsonify({'message': 'Image not found', 'success': False}), 404
+        
+        return send_file(image_path, mimetype='image/png')
+    except Exception as e:
+        print(f'CourtRoutes.py - get_court_image() - Error: {str(e)}')
+        return jsonify({'message': 'Internal Server Error', 'success': False}), 500

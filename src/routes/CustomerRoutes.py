@@ -75,22 +75,22 @@ def update_user():
             return response, 401
     try:
         body= request.json
-        required_keys=["service_code","user","name","lastname","cellphone","user_id"]
-        for key in required_keys:
-            if body.get(key) is None:
-                raise MissingKeyException(missing_key=key)
-        service_code=body["service_code"]
+
         user= body["user"]
         name=body["name"]
         last_name=body["lastname"]
         cellphone=body["cellphone"]
         user_id=body["user_id"]
-        json_response = CustomerService.update_user(service_code,user,name,last_name,cellphone,user_id)
+        password=body["password"]
+        sex=body["sex"]
+        email=body["email"]
+
+        json_response = CustomerService.update_user(user,name,last_name,cellphone,user_id, password, sex, email)
         
         return jsonify({'data': json_response, 'success': True})
     except Exception as ex:
-        print(str(ex))
-        return jsonify({'message': "Error", 'success': False})
+        print(f"Exception: {str(ex)}")
+        return jsonify({'message': f"{str(ex)}", 'success': False})
     
 @main.route('/validate_cellphone', methods=['GET'], strict_slashes=False)
 def get_user_by_cellphone():
@@ -134,7 +134,7 @@ def register_customer():
         last_name=body["lastname"]
         cellphone=body["cellphone"]
         user=body["user"]
-  
+
         json_response = CustomerService.save_customer(service_code,user,name,last_name,cellphone,)
         
 

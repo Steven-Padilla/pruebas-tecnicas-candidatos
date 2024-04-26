@@ -1,16 +1,86 @@
 import json
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
+from src.services.SignUpService import SignUpService
 from src.services.UserService import UserService
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException # Errors
 from src.utils.Security import Security # Security
-from orm_models import Users, UsersCentral
+from orm_models import UserToken, Users, UsersCentral
 from src.database.db import get_connection_servicecode_orm
 from sqlalchemy.orm import scoped_session, sessionmaker
 from extensions import db
 
 main = Blueprint('user_profile_blueprint', __name__)
 
+@main.route('/update_firebase_token', methods=['POST'], strict_slashes=False)
+def update_firebase_token():
+    #has_access = Security.verify_token(request.headers)
+    has_access = True
+    if has_access:
+        try:
+            user_id = request.json['user_id']
+            firebase_token = request.json['firebase_token']
+            #nuevos campos
+            uuid = request.json['uuid']
+            device = request.json['device']
+
+            user = UsersCentral.query.get(user_id)
+            if user:
+                token = UserToken.query.filter_by(user_id = user_id, device = device).first()
+                
+                if token is None:
+                    new_token = UserToken(user_id = user_id, token = firebase_token, device = device, uuid = uuid, updated_at = func.now())
+                    db.session.add(new_token)    
+                else:
+                    token.token = firebase_token
+                    token.uuid = uuid
+                    token.updated_at = func.now()
+                db.session.commit()
+                data = UserToken.query.filter_by(user_id = user.id).first()
+                if data is None:
+                    raise(Exception)
+                
+                return jsonify({'data': data.as_dict() ,'message': 'Firebase token updated successfully', 'success': True})
+            else:
+            
+                return jsonify({'message': 'User not found', 'success': False}), 404
+        except Exception as ex:
+            print(str(ex))
+            return jsonify({'message': "Error", 'success': False}), 500
+    else:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    
+@main.route('/delete_firebase_token', methods=['POST'], strict_slashes=False)
+def delete_firebase_token():
+    #has_access = Security.verify_token(request.headers)
+    has_access = True
+    if has_access:
+        try:
+            user_id = request.json['user_id']
+            #nuevos campos
+            uuid = request.json['uuid']
+            device = request.json['device']
+
+            user = UsersCentral.query.get(user_id)
+            if user:
+                token = UserToken.query.filter_by(user_id = user_id, device = device, uuid=uuid).first()
+                if token is None:
+                    return jsonify({'message': 'Firebase token not found', 'success': False}),404
+                else:
+                    token_json = token.as_dict()
+                    db.session.delete(token)
+                    db.session.commit()
+                return jsonify({'data': token_json ,'message': 'Firebase token deleted successfully', 'success': True})
+            else:
+                return jsonify({'message': 'User not found', 'success': False}), 404
+        except Exception as ex:
+            print(str(ex))
+            return jsonify({'message': "Error", 'success': False}), 500
+    else:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    
 @main.route('/update/<int:user_id>', methods=['POST'], strict_slashes=False)
 def update_user(user_id):
     try:
@@ -27,6 +97,26 @@ def update_user(user_id):
         response = UserService.update(user_id, name, lastname, secondsurname, birthday, sex, alias)
 
         return response
+    except MissingDataException as ex:
+        return jsonify({'message': "User not found", 'success': False}), 404
+    except DataTypeException as ex:
+        print(f'Error: {ex.message}')
+        return jsonify({'message': f"Error: {ex.message}", 'success': False}),400
+    except Exception as ex:
+        print(ex)
+        return jsonify({'message': f"ERROR: {ex}", 'success': False}), 400
+
+@main.route('/update/sport/<int:user_id>', methods=['POST'], strict_slashes=False)
+def update_sport(user_id):
+    try:
+
+        body = request.json
+        sport_id = body.get('sport_id', None)
+        level_id = body.get('level_id', None)
+        
+        response = SignUpService.update_sport(user_id, sport_id, level_id)
+
+        return {"data": response, "success": True}
     except MissingDataException as ex:
         return jsonify({'message': "User not found", 'success': False}), 404
     except DataTypeException as ex:
@@ -58,3 +148,6 @@ def get_wallet_balance():
     else:
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
+
+
+    
