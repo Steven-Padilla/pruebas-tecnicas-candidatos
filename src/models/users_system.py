@@ -16,6 +16,7 @@ class UsersSystem(db.Model, SerializerMixin):
     lastname = Column("paterno",String(255), nullable=False)
     secondsurname = Column("materno",String(255), nullable=False)
     service_code = Column("service_code", Integer, nullable=False)
+    status = Column("estatus", Integer, nullable=False)
 
     user_type = relationship("UserType") 
     profile = relationship("Profile")
