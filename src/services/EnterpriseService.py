@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 from flask import jsonify
 from src.models import Enterprise
@@ -27,7 +27,7 @@ class EnterpriseService:
         try:
             response = {}
         
-            enterprise_data = Enterprise.query.filter(Enterprise.service_code == service_code).filter(Enterprise.status == 1).first()
+            enterprise_data : Union[Enterprise, Any] = Enterprise.query.filter(Enterprise.service_code == service_code).filter(Enterprise.status == 1).first()
 
             response = enterprise_data.to_dict()
 
@@ -35,29 +35,30 @@ class EnterpriseService:
             
         except CustomException as ex:
             raise CustomException(ex)
-
         
     @classmethod
-    def update_court(cls, court_id: int, service_code: int, name: Optional[str] = None, address: Optional[str] = None, 
-        active: Optional[int] = None, enable_reservation_app: Optional[int] = None, color: Optional[str] = None, 
-        image: Optional[str] = None, id_zone_size: Optional[int] = None, id_sport: Optional[int] = None, id_court_type: Optional[int] = None, 
-        id_court_characteristics: Optional[int] = None) -> dict:
+    def update_enterprise(cls, service_code: int, name: Optional[str] = None, cellphone: Optional[str] = None, 
+        telephone: Optional[str] = None, latitude: Optional[str] = None, longitude: Optional[str] = None, postal_code: Optional[str] = None, 
+        country: Optional[str] = None, city: Optional[str] = None,state: Optional[str] = None, settlement: Optional[str] = None, neighborhood: Optional[str] = None, 
+        address: Optional[str] = None) -> dict:
         """
-        Update court information in the 'zonas' table.
+        Update enterprise data information in the 'empresas' table.
 
         Args:
-            court_id (int): The ID of the court.
             service_code (int): The service code for database connection.
-            name (Optional[str]): The name of the court (optional).
-            address (Optional[str]): The address of the court (optional).
-            active (Optional[int]): The active status of the court (optional).
-            enable_reservation_app (Optional[int]): The status of the court for reservation app (optional).
-            color (Optional[str]): The color of the court (optional).
-            image (Optional[str]): The image URL of the court (optional).
-            id_zone_size (Optional[int]): The ID of the zone size (optional).
-            id_sport (Optional[int]): The ID of the sport (optional).
-            id_court_type (Optional[int]): The ID of the court type (optional).
-            id_court_caracteristic (Optional[int]): The ID of the court characteristic (optional).
+            name (Optional[str]): The name of the enterprise (optional).
+            address (Optional[str]): The address of the enterprise (optional).
+            cellphone (Optional[str]) : the cellphone of the enterprise(optional).
+            telephone (Optional[str]) : the telephone of the enterprise(optional).
+            latitude (Optional[str]) : the latitude of the enterprise(optional).
+            longitude (Optional[str]) : the longitude  of the enterprise(optional).
+            postal_code (Optional[str]) : the postal_code of the enterprise(optional).
+            country (Optional[str]) : the country of the enterprise(optional).
+            city (Optional[str]) : the city of the enterprise(optional).
+            state (Optional[str]) : the state of the enterprise(optional).
+            settlement (Optional[str]) : the settlement of the enterprise(optional).
+            neighborhood (Optional[str]) : the neighborhood of the enterprise(optional).
+            address (Optional[str]) : the address of the enterprise(optional).
 
         Returns:
             dict: A dictionary containing the result of the operation.
@@ -66,25 +67,49 @@ class EnterpriseService:
             CustomException: If an error occurs during the update process.
         """
         try:
-            engine = get_connection_servicecode_orm(service_code)
-            with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
-                db_session: Session
+            enterprise_data : Union[Enterprise, Any] = Enterprise.query.filter(Enterprise.service_code == service_code).filter(Enterprise.status == 1).first()
 
-                court: Union[Courts, Any] = db_session.query(Courts).get(court_id)
+            if enterprise_data is None:
+                raise MissingDataException(Enterprise.__tablename__, get_db_name_app(),)
+            
+            if name is not None and name.strip():
+                enterprise_data.name = name
 
-                if court is None:
-                    raise MissingDataException(Courts.__tablename__, engine.url.database, court_id)
+            if cellphone is not None and cellphone.strip():
+                enterprise_data.cellphone = cellphone
+            if telephone is not None and telephone.strip():
+                enterprise_data.telephone = telephone
+
+            if latitude is not None and latitude.strip():
+                enterprise_data.latitude = latitude
+
+            if longitude is not None and longitude.strip():
+                enterprise_data.longitude = longitude
+            if postal_code is not None and postal_code.strip():
+                enterprise_data.postal_code = postal_code
                 
-                cls.update_court_attributes(name, address, active, enable_reservation_app, color, image, id_zone_size, id_sport, id_court_type, id_court_characteristics, court)
+            if country is not None and country.strip():
+                enterprise_data.country = country
+            
+            if city is not None and city.strip():
+                enterprise_data.city = city
 
-                if id_sport is None:
-                    sport = cls.get_sport(court.sport)
-                else:
-                    sport = cls.get_sport(id_sport)
-                    
-                db_session.commit()
+            if state is not None and state.strip():
+                enterprise_data.state = state
+                
+            if settlement is not None and settlement.strip():
+                enterprise_data.settlement = settlement
 
-                return {'data': court.to_json(sport), 'success': True}
+            if neighborhood is not None and neighborhood.strip():
+                enterprise_data.neighborhood = neighborhood
+                
+            if address is not None and address.strip():
+                enterprise_data.address = address
+                
+            db.session.commit()
+
+            return {'data': enterprise_data.to_dict() , 'success': True}
+        
         except CustomException as ex:
-            print(f'CourtRoutes.py - update_court() - Error: {str(ex)}')
+            print(f'EnterpriseRoute.py - update_enterprise() - Error: {str(ex)}')
             raise CustomException(ex)

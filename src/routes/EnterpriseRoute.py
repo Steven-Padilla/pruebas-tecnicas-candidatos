@@ -39,6 +39,7 @@ def update_enterprise():
         cellphone = body.get("cellphone")
         telephone = body.get("telephone")
         latitude = body.get("latitude")
+        longitude = body.get("longitude")
         postal_code = body.get("postal_code")
         country = body.get("latitude")
         state = body.get("state")
@@ -49,7 +50,7 @@ def update_enterprise():
     
         json_response = EnterpriseService.update_enterprise(service_code=service_code, 
                                                             name=name, cellphone=cellphone, telephone=telephone,
-                                                            latitude=latitude, postal_code=postal_code, country=country,
+                                                            latitude=latitude, longitude=longitude, postal_code=postal_code, country=country,
                                                             state=state, city=city, settlement=settlement, neighborhood=neighborhood, 
                                                             address=address)
         
