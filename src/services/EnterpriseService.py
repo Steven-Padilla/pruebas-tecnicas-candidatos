@@ -26,48 +26,65 @@ class EnterpriseService:
         """
         try:
             response = {}
-            engine = get_connection_servicecode_orm(service_code)
-            with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
-                # Type annotation for db_session
+        
+            enterprise_data = Enterprise.query.filter(Enterprise.service_code == service_code).filter(Enterprise.status == 1).first()
 
-                db_session: Session
-            
-                enterprise_data = db_session.query(Enterprise).filter(Enterprise.service_code == service_code).filter(Enterprise.status == 1).first()
+            response = enterprise_data.to_dict()
 
-                response = enterprise_data.to_dict()
-
-                return response
+            return response
             
         except CustomException as ex:
             raise CustomException(ex)
+
         
-
     @classmethod
-    def save_enterprise(cls, service_code: int ) -> dict:
+    def update_court(cls, court_id: int, service_code: int, name: Optional[str] = None, address: Optional[str] = None, 
+        active: Optional[int] = None, enable_reservation_app: Optional[int] = None, color: Optional[str] = None, 
+        image: Optional[str] = None, id_zone_size: Optional[int] = None, id_sport: Optional[int] = None, id_court_type: Optional[int] = None, 
+        id_court_characteristics: Optional[int] = None) -> dict:
         """
-            Save a new  into 'tablename' table.
+        Update court information in the 'zonas' table.
 
-            Args:
-                service_code (int): The service code for database connection.
+        Args:
+            court_id (int): The ID of the court.
+            service_code (int): The service code for database connection.
+            name (Optional[str]): The name of the court (optional).
+            address (Optional[str]): The address of the court (optional).
+            active (Optional[int]): The active status of the court (optional).
+            enable_reservation_app (Optional[int]): The status of the court for reservation app (optional).
+            color (Optional[str]): The color of the court (optional).
+            image (Optional[str]): The image URL of the court (optional).
+            id_zone_size (Optional[int]): The ID of the zone size (optional).
+            id_sport (Optional[int]): The ID of the sport (optional).
+            id_court_type (Optional[int]): The ID of the court type (optional).
+            id_court_caracteristic (Optional[int]): The ID of the court characteristic (optional).
 
+        Returns:
+            dict: A dictionary containing the result of the operation.
 
-            Returns:
-                dict: A dictionary containing the newly created  data.
-
-            Raises:
-                CustomException: If an error occurs during the saving process.
+        Raises:
+            CustomException: If an error occurs during the update process.
         """
         try:
             engine = get_connection_servicecode_orm(service_code)
             with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
                 db_session: Session
-                #TODO: añadir los atributos correspondientes
-                new_ = ()
 
-                db_session.add(new_)
+                court: Union[Courts, Any] = db_session.query(Courts).get(court_id)
+
+                if court is None:
+                    raise MissingDataException(Courts.__tablename__, engine.url.database, court_id)
+                
+                cls.update_court_attributes(name, address, active, enable_reservation_app, color, image, id_zone_size, id_sport, id_court_type, id_court_characteristics, court)
+
+                if id_sport is None:
+                    sport = cls.get_sport(court.sport)
+                else:
+                    sport = cls.get_sport(id_sport)
+                    
                 db_session.commit()
 
-                return new_.to_dict()
-        except CustomException as e:
-            raise CustomException(str(e))
-    pass
+                return {'data': court.to_json(sport), 'success': True}
+        except CustomException as ex:
+            print(f'CourtRoutes.py - update_court() - Error: {str(ex)}')
+            raise CustomException(ex)
