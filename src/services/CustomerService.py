@@ -41,19 +41,16 @@ class CustomerService:
 
         try:
             json_response = {}
-            engine = get_connection_servicecode_orm(service_code)
-            with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
-                db_session: Session
 
-                user_central = UsersCentral.query.filter_by(id=id, status=1).first()
-                
-                if not user_central:
-                    raise MissingDataException(UsersCentral.__tablename__, get_db_name_app(),)
-                user = user_central.as_dict() 
+            user_central = UsersCentral.query.filter_by(id=id, status=1).first()
+            
+            if not user_central:
+                raise MissingDataException(UsersCentral.__tablename__, get_db_name_app(),)
+            user = user_central.as_dict() 
 
-                json_response = user
+            json_response = user
 
-                return json_response
+            return json_response
         except CustomException as e:
             raise CustomException(f"Error: {str(e)}") #lo enviará al routes
     @classmethod
