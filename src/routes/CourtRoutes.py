@@ -1,10 +1,11 @@
 import os
 from flask import Blueprint, request, jsonify, send_file
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException # Errors
-from src.utils.errors.CustomException import CustomException, DataTypeException, MissingDataException, MissingKeyException # Errors
 from src.utils.Security import Security # Security
 from src.services.CourtService import CourtService# Groups
 from decouple import config
+
+from src.utils import validate_data
 
 main = Blueprint('court_blueprint', __name__)
 
@@ -74,13 +75,23 @@ def save_court():
         return response, 401
     try:
         body = request.json
-        address = body.get('address','')
 
-        required_keys = ['service_code','name', 'active', 'enable_reservation_app', 'color', 'image', 'sport_id', 'type_id', 'size_id', 'characteristic_id']
+        types = {
+            'name': {'type': str, 'required': True},
+            'color': {'type': str, 'required': True},
+            'service_code': {'type': int, 'required': True},
+            'active': {'type': int, 'required': True},
+            'enable_reservation_app': {'type': int, 'required': True},
+            'sport_id': {'type': int, 'required': True},
+            'type_id': {'type': int, 'required': True},
+            'size_id': {'type': int, 'required': True},
+            'characteristic_id': {'type': int, 'required': True},
+            'image': {'type': str, 'required': False}, #aun se la paso asi que se va como 'image' : '' em el body            #optional data
+            #optional data
+            'address': {'type': str, 'required': False},
+        }
 
-        for key in required_keys:
-            if body.get(key) is None:
-                raise MissingKeyException(missing_key=key)
+        validate_data(data=body,types=types)
 
         service_code = body['service_code']
         name = body['name']
@@ -94,20 +105,7 @@ def save_court():
         id_zone_size = body['size_id']
         id_court_caracteristic = body['characteristic_id']
 
-        if not isinstance(service_code, int):
-            raise DataTypeException('service_code', int)
-        if not isinstance(active, int):
-            raise DataTypeException('active', int)
-        if not isinstance(enable_reservation_app, int):
-            raise DataTypeException('enable_reservation_app', int)
-        if not isinstance(id_zone_size, int):
-            raise DataTypeException('size_id', int)
-        if not isinstance(id_sport, int):
-            raise DataTypeException('sport_id', int)
-        if not isinstance(id_court_type, int):
-            raise DataTypeException('type_id', int)
-        if not isinstance(id_court_caracteristic, int):
-            raise DataTypeException('characteristic_id', int)
+        address = body.get('address','')
 
         new_court = CourtService.save_court(service_code, name,address,active, enable_reservation_app,color,image,id_zone_size,id_sport,id_court_type,id_court_caracteristic)
 
