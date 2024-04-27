@@ -6,16 +6,12 @@ Sigue los pasos a continuación para configurar el ambiente de trabajo correctam
 
 - Asegúrate de tener Python en la versión 3.9.0 instalado en tu sistema. Puedes descargar e instalar Python desde [python.org](https://www.python.org/downloads/).
 
-## Paso 1: Realizar un Fork del Repositorio
+## Paso 1: Clonar el Repositorio
 
-Haz un fork del repositorio original a tu propia cuenta de GitHub haciendo clic en el botón "Fork" en la esquina superior derecha de la página del repositorio en GitHub.
-
-## Paso 2: Clonar tu Repositorio Forked
-
-Clona tu repositorio forked en tu máquina local utilizando el siguiente comando:
+Clona el repositorio en tu máquina local utilizando el siguiente comando:
 
 ```bash
-git clone <URL-de-tu-repositorio-forked>
+git clone <URL-del-repositorio>
 ```
 
 ## Paso 3: Crear y Activar el Ambiente Virtual
