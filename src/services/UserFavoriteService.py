@@ -2,7 +2,8 @@ from sqlalchemy import func
 from extensions import db
 from src.database.db import get_connection_servicecode_orm
 from src.utils.errors.CustomException import CustomException
-from orm_models import Enterprise, Users, UserEnterprise, UsuarioFavorito
+from orm_models import Users, UserEnterprise, UsuarioFavorito
+from src.models import Enterprise
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 SERVICE_CODE_BDCENTRAL = 143

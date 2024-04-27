@@ -76,16 +76,18 @@ def update_user():
     try:
         body= request.json
 
-        user= body["user"]
-        name=body["name"]
-        last_name=body["lastname"]
-        cellphone=body["cellphone"]
-        user_id=body["user_id"]
-        password=body["password"]
-        sex=body["sex"]
-        email=body["email"]
+        cellphone=body.get("cellphone")
+        user= body.get("user")
+        name=body.get("name")
+        lastname=body.get("lastname")
+        user_id=body.get("user_id")
+        password=body.get("password")
+        sex=body.get("sex")
+        email=body.get("email")
+        birthday=body.get("birthday")
+        secondsurname=body.get("secondsurname")
 
-        json_response = CustomerService.update_user(user,name,last_name,cellphone,user_id, password, sex, email)
+        json_response = CustomerService.update_user(user,name,lastname,cellphone,user_id, password, sex, email, birthday, secondsurname)
         
         return jsonify({'data': json_response, 'success': True})
     except Exception as ex:

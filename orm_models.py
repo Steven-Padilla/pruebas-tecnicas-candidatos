@@ -74,7 +74,7 @@ class UsersCentral(db.Model, SerializerMixin):
     
     def as_dict(self):
         user_dict = self.to_dict(
-            only=('id','name','lastname','user','email','cellphone','password')
+            only=('id','name','lastname','user','email','cellphone','password', 'picture', 'ranking', 'alias', 'secondsurname', 'birthday', 'sex')
         )
 
         return user_dict
@@ -275,3 +275,14 @@ class UserEnterprise(db.Model, SerializerMixin):
     user = relationship("UsersCentral")
     club = relationship("Enterprise")
     user_type = relationship("UserType")
+
+class UsuarioFavorito(db.Model, SerializerMixin):
+    __tablename__ = 'usuario_favorito'
+
+    id = db.Column('id',db.Integer, primary_key=True, autoincrement=True)
+    user_id = Column('idusuario',db.Integer, db.ForeignKey('usuarios_central.idusuarios'), nullable=False)
+    club_id = Column('idempresa',db.Integer, db.ForeignKey('empresa.idempresa'), nullable=False)
+    status = db.Column('estatus',db.SmallInteger, nullable=False, default=1) 
+
+    user = db.relationship("UsersCentral")
+    club = db.relationship("Enterprise")

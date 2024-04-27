@@ -1,7 +1,8 @@
 from typing import Any, Union
 
 from flask import jsonify
-from orm_models import UserEnterprise, Users, UsersCentral, Enterprise
+from orm_models import UserEnterprise, Users, UsersCentral
+from src.models import Enterprise
 from src.database.db import get_connection_servicecode_orm
 from src.utils.Text import get_db_name_app
 from src.utils.errors.CustomException import CustomException, MissingDataException
@@ -10,17 +11,16 @@ from extensions import db
 
 class CustomerService:
     @classmethod
-    def get_all_users(cls, service_code:int)-> dict:
-
+    def get_all_users(cls, service_code:int)-> list:
         try:
-            json_response = {}
+            json_response = []
             engine = get_connection_servicecode_orm(service_code)
             with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
                 db_session: Session
                 users_club: Union[Users, Any] = db_session.query(Users).all()
 
                 if not users_club:
-                    return jsonify({'data': [], 'success': True})
+                    return []
                 items = [u.id for u in users_club] 
                 
                 users_central = UsersCentral.query.filter(
@@ -57,7 +57,7 @@ class CustomerService:
         except CustomException as e:
             raise CustomException(f"Error: {str(e)}") #lo enviará al routes
     @classmethod
-    def update_user(cls, user, name, last_name, cellphone, id, password, sex, email) -> dict:
+    def update_user(cls, user, name, lastname, cellphone, id, password, sex, email, birthday, secondsurname) -> dict:
             try:
                 json_response = {}
 
@@ -67,8 +67,10 @@ class CustomerService:
 
                 if name is not None and name.strip():
                     user_central.name = name
-                if last_name is not None and last_name.strip():
-                    user_central.lastname = last_name
+                if lastname is not None and lastname.strip():
+                    user_central.lastname = lastname
+                if secondsurname is not None and secondsurname.strip():
+                    user_central.secondsurname = secondsurname
                 if user is not None and user.strip():
                     user_central.user = user
                 if cellphone is not None and cellphone.strip():
@@ -79,6 +81,8 @@ class CustomerService:
                     user_central.email = email
                 if sex is not None and sex.strip():
                     user_central.sex = sex
+                if birthday is not None and birthday.strip():
+                    user_central.birthday = birthday
 
                 db.session.commit()
                 usuario = user_central.as_dict()
@@ -143,26 +147,13 @@ class CustomerService:
     @classmethod
     def create_user_in_club(cls, service_code, wallet_balance, id) -> dict:
         try:
-            club: Union[Enterprise, Any] = Enterprise.query.filter_by(service_code = service_code).first()
             engine = get_connection_servicecode_orm(service_code)
             with scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))() as db_session:
                 db_session: Session
                 
                 new_user = Users(wallet_balance=wallet_balance, id=id)
-                user_enterprise: Union[UserEnterprise, Any] = UserEnterprise.query.filter_by(user_id=id, club_id=club.id, user_type_id=3).first()
-                if user_enterprise is None:
-
-                    new_user_interprise = UserEnterprise(user_id=id, club_id=club.id, user_type_id=3)
-                    # Establecer la relación bidireccional
-                    db.session.add(new_user_interprise)
-                    # Agregar los objetos a la sesión
-                    db.session.flush()
-                    # Confirmar los cambios en la sesión
-
                 db_session.add(new_user)
                 db_session.commit()
-
-
         except CustomException as ex:
             print(str(ex))
             return CustomException(ex) 
@@ -182,18 +173,22 @@ class CustomerService:
     def save_customer(cls, service_code, user, name, lastname,cellphone, ):
         try:
             wallet_balance = 0.0
-            user_central : Union[UsersCentral, Any] = UsersCentral.query.filter_by(cellphone=cellphone).first()
-            if user_central is None:
+            customer : Union[UsersCentral, Any] = UsersCentral.query.filter_by(cellphone=cellphone).first()
+            if customer is None:
                 customer = cls.create_user_central(cellphone, user, name, lastname)
-                cls.create_user_in_club( service_code, wallet_balance, customer.id)
-                db.session.commit()
-                if customer:
-                    return customer.as_dict()
-                else: return {}
-            id = user_central.id
-            cls.create_user_in_club(service_code, wallet_balance, id)
-            db.session.commit()
-            return user_central.as_dict()
+
+            cls.create_user_in_club(service_code, wallet_balance, customer.id)
+            #Crear relación si no existe
+            club: Union[Enterprise, Any] = Enterprise.query.filter_by(service_code = service_code).first()
+            user_enterprise: Union[UserEnterprise, Any] = UserEnterprise.query.filter_by(user_id=customer.id, club_id=club.id, user_type_id=3).first()
+            if user_enterprise is None:
+                user_enterprise = UserEnterprise(user_id=id, club_id=club.id, user_type_id=3)
+                db.session.add(user_enterprise)
+            #TODO: si no esta en la lista de favoritos debería agregarlo
+            return customer.as_dict()
         except CustomException as ex:
             print(str(ex))
-            return CustomException(ex) 
+            return CustomException(ex)
+        finally:
+            db.session.commit()
+
