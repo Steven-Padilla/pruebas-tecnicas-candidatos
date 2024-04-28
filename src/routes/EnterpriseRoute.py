@@ -57,7 +57,7 @@ def update_enterprise():
         return jsonify({'data': json_response, 'success': True})
     
     except Exception as e:
-        print(f'EnterpriseRoute.py - get_all() - Error: {str(e)}')
+        print(f'EnterpriseRoute.py - update_enterprise() - Error: {str(e)}')
         return jsonify({'message': f"{str(e)}", 'success': False}) 
     
     
