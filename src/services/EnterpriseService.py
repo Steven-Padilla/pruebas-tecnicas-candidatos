@@ -13,16 +13,16 @@ class EnterpriseService:
     @classmethod
     def get_enterprise_data(cls, service_code:int) -> list:
         """
-            Get a list of court information from 'zonas' table.
+        Get enterprise information from 'empresa' table based on service code.
 
-            Args:
-                service_code (int): The service code for database connection.
+        Args:
+            service_code (int): The service code of the enterprise.
 
-            Returns:
-                list: A list containing the courts information.
+        Returns:
+            dict: A dictionary containing the enterprise information.
 
-            Raises:
-                CustomException: If an error occurs during the retrieval process or if the court is not found.
+        Raises:
+            CustomException: If an error occurs during the retrieval process or if the court is not found.
         """
         try:
             response = {}
@@ -42,7 +42,7 @@ class EnterpriseService:
         country: Optional[str] = None, city: Optional[str] = None,state: Optional[str] = None, settlement: Optional[str] = None, neighborhood: Optional[str] = None, 
         address: Optional[str] = None) -> dict:
         """
-        Update enterprise data information in the 'empresas' table.
+        Update enterprise data information in the 'empresa' table.
 
         Args:
             service_code (int): The service code for database connection.
