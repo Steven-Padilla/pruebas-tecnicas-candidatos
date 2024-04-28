@@ -108,7 +108,7 @@ class EnterpriseService:
                 
             db.session.commit()
 
-            return {'data': enterprise_data.to_dict() , 'success': True}
+            return enterprise_data.to_dict()
         
         except CustomException as ex:
             print(f'EnterpriseRoute.py - update_enterprise() - Error: {str(ex)}')
