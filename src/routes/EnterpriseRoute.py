@@ -41,7 +41,7 @@ def update_enterprise():
         latitude = body.get("latitude")
         longitude = body.get("longitude")
         postal_code = body.get("postal_code")
-        country = body.get("latitude")
+        country = body.get("country")
         state = body.get("state")
         city = body.get("city")
         settlement = body.get("settlement")
