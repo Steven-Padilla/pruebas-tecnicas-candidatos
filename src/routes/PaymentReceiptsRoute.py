@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from src.database.db import get_connection_servicecode_orm
 from src.models import Membership, PaymentDiscountMembership, PaymentReceipt, PaymentReceiptDescription, PaymentDiscount, Discount, Packages, Payment
 from src.models.payment_receipt_image import PaymentReceiptImage
+from src.services.PaymentReceiptsService import PaymentReceiptService
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingKeyException 
 from src.utils.Security import Security 
 from orm_models import Users, UsersCentral
@@ -13,118 +14,55 @@ main = Blueprint('Receipts_blueprint', __name__)
 
 @main.route('/getSingle', methods=['GET'], strict_slashes=False)
 def get_single_receipts_v2():
-    has_access=True
-    if has_access:
-        try:
-            service_code = request.args['service_code']
-            receipt_id = request.args['receipt_id']
-            engine = get_connection_servicecode_orm(service_code)
-            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-            receipt=(
-                db_session.query(
-                    PaymentReceipt,
-                    PaymentReceiptDescription, 
-                    PaymentDiscount,
-                    Discount,
-                    PaymentReceiptImage
-                    )
-                    .where(PaymentReceipt.idnotapago == receipt_id)
-                    .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)
-                    .outerjoin(PaymentDiscount, PaymentDiscount.idnotapago == PaymentReceiptDescription.idnotapago)
-                    .outerjoin(Discount, Discount.iddescuento == PaymentDiscount.iddescuento)
-                    .outerjoin(PaymentReceiptImage, PaymentReceiptImage.payment_receipt_id == receipt_id)
-                    .all())
-            receiptData=[]
-
-            for receiptInfo, description, paymentDiscount,discount,image   in receipt:
-                membershipPay=db_session.query(PaymentDiscountMembership).where(PaymentDiscountMembership.id_payment_receipt==receipt_id).first()
-                motivoMembresia=""
-                if  membershipPay is not None:
-                    aux=db_session.query(Membership.title).where(Membership.id_membership == membershipPay.id_membership).first()
-                    motivoMembresia=aux[0]
-
-                membershipDiscount=int(membershipPay.amount_to_discount) if membershipPay else None
-                receiptData.append({
-                    "idNotaPago":receiptInfo.idnotapago,
-                    "descripcion":description.descripcion,
-                    "fecha":receiptInfo.fecha,
-                    "folio":receiptInfo.folio,
-                    "fechaFactura":receiptInfo.fechafactura,
-                    "folioFactura":receiptInfo.foliofactura,
-                    "requiereFactura":receiptInfo.requierefactura,
-                    "total":receiptInfo.total,
-                    "subTotal":receiptInfo.subtotal,
-                    "comision":receiptInfo.comisiontotal,
-                    "montoDescuento":"" if not paymentDiscount else int(paymentDiscount.montoadescontar),
-                    "imagen": ""if not image else  image.image,
-                    "motivoDescuento":"" if not discount else discount.titulo, 
-                    "montoMonedero":receiptInfo.montomonedero,
-                    "metodoPago":receiptInfo.tipopago,
-                    "estatus":receiptInfo.estatus,
-                    "motivoMembresia":motivoMembresia,
-                    "montoMembresia":membershipDiscount,
-                })
-            finalJson= {key: value for key, value in receiptData[0].items() if key not in ["descripcion", "motivoMembresia", "motivoDescuento"]}
-            finalJson.update({"descripcion":[]})
-            finalJson.update({"motivoMembresia":[]})
-            finalJson.update({"motivoDescuento":[]})
-            for singleReceipt in receiptData:
-                if singleReceipt.get("descripcion") not in finalJson.get("descripcion"):
-                    finalJson["descripcion"].append(singleReceipt.get("descripcion"))
-                if singleReceipt.get("motivoMembresia") not in finalJson.get("motivoMembresia"):
-                    finalJson["motivoMembresia"].append(singleReceipt.get("motivoMembresia"))
-                if singleReceipt.get("motivoDescuento") not in finalJson.get("motivoDescuento"):
-                    finalJson["motivoDescuento"].append(singleReceipt.get("motivoDescuento"))
-
-            return jsonify({'data': finalJson, 'success': True})
-        except CustomException as ex:
-            print(str(ex))
-            return CustomException(ex)
-    else:
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
+    
+    try:
+        args=request.args
+        required_keys=['service_code','receipt_id']
+        for key in required_keys:
+            if args.get(key) is None:
+                raise MissingKeyException(missing_key=key)
+
+        receipt_id = request.args['receipt_id']
+        service_code = request.args['service_code']
+        data=PaymentReceiptService.get_single_receipt(service_code,receipt_id)
+        
+        return jsonify({'data': data, 'success': True})
+    except MissingKeyException as ex:
+        print(f'PaymentReceiptRoute.py - get_single_receipts_v2() - Error: {ex.message}')
+        return jsonify({'message': f"Ups, algo salió mal: {ex.message}", 'success': False}),404
+    except CustomException as ex:
+        print(str(ex))
+        return jsonify({'message': f"Ups, algo salió mal: {str(ex)}", 'success': False}),400
+    
 
 @main.route('/getAll', methods=['GET'], strict_slashes=False)
 def get_receipts_v2():
-    has_access=True
-    if has_access:
-        try:
-            service_code = request.args['service_code']
-            engine = get_connection_servicecode_orm(service_code)
-            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
-            recipes=(
-                db_session.query(
-                PaymentReceipt,
-                PaymentReceiptDescription,
-            )
-                .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)).all() 
-
-            users=UsersCentral.query.all()
-            user_names={user.id : f'{user.name} {user.lastname} {user.secondsurname}' for user in users} 
-            recipes_dics=[]
-            for receipt, description in recipes:
-                recipes_dics.append({
-                    "idRecibo":receipt.idnotapago,
-                    "idUsuario":receipt.idusuario,
-                    "nombreUsuario":user_names.get(receipt.idusuario,"Sin nombre"),
-                    "folio":receipt.folio,
-                    "total":receipt.total,
-                    "descripcion":description.descripcion,
-                    "fecha":receipt.fecha,
-                    "idTipoPago":receipt.idtipopago,
-                    "tipoPago":receipt.tipopago,
-                    "estatus":receipt.estatus,
-                })
-                
-            response = jsonify({'data': recipes_dics, 'success': True})
-            return response
-
-        except CustomException as ex:
-            print(str(ex))
-            return CustomException(ex)
-    else:
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
+
+    try:
+        args = request.args
+        if not args.get('service_code'):
+            raise MissingKeyException(missing_key='service_code')
+
+        service_code = request.args['service_code']
+        
+        data=PaymentReceiptService.get_receipts(service_code)
+        response = jsonify({'data': data, 'success': True})
+        return response
+    except MissingKeyException as ex:
+        print(f'PaymentReceiptRoute.py - get_receipts_v2() - Error: {ex.message}')
+        return jsonify({'message': f"Ups, algo salió mal: {ex.message}", 'success': False}),404
+    except CustomException as ex:
+        print(str(ex))
+        return CustomException(ex)
+    
 
 
 @main.route('/', methods=['POST'], strict_slashes=False)
