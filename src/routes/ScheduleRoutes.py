@@ -14,7 +14,6 @@ def get_schedule():
         payload = Security.get_payload_token(request.headers)
         service_code = payload.get("service_code")
 
-        # data = EnterpriseService.get_enterprise_data(service_code=service_code)
         data = ScheduleService.get_schedule(service_code=service_code)
 
         return jsonify({"data": data, "success": True})
