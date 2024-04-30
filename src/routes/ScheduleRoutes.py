@@ -30,12 +30,9 @@ def update_schedule():
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
     try:
-        payload = Security.get_payload_token(request.headers)
-        service_code = payload.get("service_code")
-
         body = request.json
     
-        json_response = ScheduleService.update_schedule(service_code = service_code, **body)
+        json_response = ScheduleService.update_schedule(**body)
         
         return jsonify({'data': json_response, 'success': True})
     
