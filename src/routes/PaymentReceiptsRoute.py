@@ -104,7 +104,6 @@ def get_receipts():
                 .filter(PaymentReceiptDescription.idpago == PaymentDiscountMembership.id_payment )
                 .join(Membership, Membership.id_membership == PaymentDiscountMembership.id_membership)
             ).all()
-            print(f'Eston son los menbership: {memberships}')
             
             memberships_dict = {idnotapago: {'amount':round(float(descuentomembresia),2), 'description':title}
                 for idnotapago,idpago,descuentomembresia,title in memberships}
@@ -226,7 +225,6 @@ def get_receipts_by_user_id(receipt_id, user_id):
             .outerjoin(Packages, Packages.idpaquete == PaymentReceiptDescription.idpaquete)
         ).all()
         # user_id=321
-        print(f'Recibos: ===============> {payment_receipts}')
         memberships = (
             db_session.query(
                 PaymentReceiptDescription.idnotapago,
