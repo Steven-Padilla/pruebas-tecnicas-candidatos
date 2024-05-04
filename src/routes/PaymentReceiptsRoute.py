@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from src.database.db import get_connection_servicecode_orm
 from src.models import Membership, PaymentDiscountMembership, PaymentReceipt, PaymentReceiptDescription, PaymentDiscount, Discount, Packages, Payment
+from src.models.payment_receipt_image import PaymentReceiptImage
+from src.services.PaymentReceiptsService import PaymentReceiptService
 from src.utils.errors.CustomException import CustomException, DataTypeException, MissingKeyException 
 from src.utils.Security import Security 
 from orm_models import Users, UsersCentral
@@ -10,9 +12,63 @@ import pytz
 
 main = Blueprint('Receipts_blueprint', __name__)
 
+@main.route('/getSingle', methods=['GET'], strict_slashes=False)
+def get_single_receipts_v2():
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+    
+    try:
+        args=request.args
+        required_keys=['service_code','receipt_id']
+        for key in required_keys:
+            if args.get(key) is None:
+                raise MissingKeyException(missing_key=key)
+
+        receipt_id = request.args['receipt_id']
+        service_code = request.args['service_code']
+        data=PaymentReceiptService.get_single_receipt(service_code,receipt_id)
+        
+        return jsonify({'data': data, 'success': True})
+    except MissingKeyException as ex:
+        print(f'PaymentReceiptRoute.py - get_single_receipts_v2() - Error: {ex.message}')
+        return jsonify({'message': f"Ups, algo salió mal: {ex.message}", 'success': False}),404
+    except CustomException as ex:
+        print(str(ex))
+        return jsonify({'message': f"Ups, algo salió mal: {str(ex)}", 'success': False}),400
+    
+
+@main.route('/getAll', methods=['GET'], strict_slashes=False)
+def get_receipts_v2():
+    has_access = Security.verify_token(request.headers)
+    if has_access is False:
+        response = jsonify({'message': 'Unauthorized', 'success': False})
+        return response, 401
+
+    try:
+        args = request.args
+        if not args.get('service_code'):
+            raise MissingKeyException(missing_key='service_code')
+
+        service_code = request.args['service_code']
+        
+        data=PaymentReceiptService.get_receipts(service_code)
+        response = jsonify({'data': data, 'success': True})
+        return response
+    except MissingKeyException as ex:
+        print(f'PaymentReceiptRoute.py - get_receipts_v2() - Error: {ex.message}')
+        return jsonify({'message': f"Ups, algo salió mal: {ex.message}", 'success': False}),404
+    except CustomException as ex:
+        print(str(ex))
+        return CustomException(ex)
+    
+
+
 @main.route('/', methods=['POST'], strict_slashes=False)
 def get_receipts():
-    has_access = Security.verify_token(request.headers)
+    # has_access = Security.verify_token(request.headers)
+    has_access=True
     if has_access:
         try:
             user = []
@@ -96,13 +152,15 @@ def get_receipts():
             for item in items:
                 fechaaux = item[0].fecha.replace(tzinfo=pytz.utc)
                 formatted_date = fechaaux.strftime("%Y-%m-%d %H:%M:%S")
-                user = dict.get(item[0].idusuario,None)
+                newUser = dict.get(item[0].idusuario,None)
                 
-                if user is not None:
+                
+                if newUser is not None:
                     user.append({
                         'id': item[0].idnotapago,
+                        'user_id':item[0].idusuario,
                         'folio': item[0].folio,
-                        'name': user['name'],
+                        'name': newUser['name'],
                         'payments': result_dict[item[0].idnotapago],
                         'date': formatted_date,
                         'payment_type': item[0].tipopago,
@@ -127,8 +185,8 @@ def get_receipts():
         response = jsonify({'message': 'Unauthorized', 'success': False})
         return response, 401
 
-@main.route('/<int:user_id>', methods=['GET'], strict_slashes=False)
-def get_receipts_by_user_id(user_id):
+@main.route('/<int:receipt_id>/<int:user_id>', methods=['GET'], strict_slashes=False)
+def get_receipts_by_user_id(receipt_id, user_id):
     # has_access = Security.verify_token(request.headers)
     has_access = True
 
@@ -159,14 +217,14 @@ def get_receipts_by_user_id(user_id):
             Discount,
             Packages,
         )
-            .filter(PaymentReceipt.idusuario == user_id)
+            .filter(PaymentReceipt.idnotapago == receipt_id)
             .join(PaymentReceiptDescription, PaymentReceipt.idnotapago == PaymentReceiptDescription.idnotapago)
             .outerjoin(Payment, PaymentReceiptDescription.idpago == Payment.id)
             .outerjoin(PaymentDiscount, PaymentDiscount.idpago == PaymentReceiptDescription.idpago)
             .outerjoin(Discount, Discount.iddescuento == PaymentDiscount.iddescuento)
             .outerjoin(Packages, Packages.idpaquete == PaymentReceiptDescription.idpaquete)
         ).all()
-
+        # user_id=321
         memberships = (
             db_session.query(
                 PaymentReceiptDescription.idnotapago,

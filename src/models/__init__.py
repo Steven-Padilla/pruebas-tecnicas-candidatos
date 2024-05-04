@@ -9,6 +9,7 @@ from .payment_receipt import PaymentReceipt
 from .payment_receipt_description import PaymentReceiptDescription 
 from .users_system import UsersSystem
 from .wallet_modes import WalletModes
+from .payment_receipt_image import PaymentReceiptImage 
 
 __all__ = [
     "Discount",
@@ -22,4 +23,5 @@ __all__ = [
     "PaymentReceiptDescription",
     "UsersSystem", 
     "WalletModes", 
+    "PaymentReceiptImage", 
     ]
