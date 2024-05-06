@@ -50,7 +50,7 @@ class PaymentReceiptService():
                     "total":receiptInfo.total,
                     "subTotal":receiptInfo.subtotal,
                     "comision":receiptInfo.comisiontotal,
-                    "montoDescuento":"" if not paymentDiscount else int(paymentDiscount.montoadescontar),
+                    "montoDescuento":0 if not paymentDiscount else float(paymentDiscount.montoadescontar),
                     "imagen": ""if not image else  image.image,
                     "motivoDescuento":"" if not discount else discount.titulo, 
                     "montoMonedero":receiptInfo.montomonedero,
@@ -58,11 +58,13 @@ class PaymentReceiptService():
                     "estatus":receiptInfo.estatus,
                     "motivoMembresia":motivoMembresia,
                     "montoMembresia":membershipDiscount,
+                    "monto":description.monto
                 })
-            finalJson= {key: value for key, value in receiptData[0].items() if key not in ["descripcion", "motivoMembresia", "motivoDescuento"]}
+            finalJson= {key: value for key, value in receiptData[0].items() if key not in ["descripcion", "motivoMembresia", "motivoDescuento","monto"]}
             finalJson.update({"descripcion":[]})
             finalJson.update({"motivoMembresia":[]})
             finalJson.update({"motivoDescuento":[]})
+            finalJson.update({"montos":[]})
             for singleReceipt in receiptData:
                 if singleReceipt.get("descripcion") not in finalJson.get("descripcion"):
                     finalJson["descripcion"].append(singleReceipt.get("descripcion"))
@@ -70,6 +72,8 @@ class PaymentReceiptService():
                     finalJson["motivoMembresia"].append(singleReceipt.get("motivoMembresia"))
                 if singleReceipt.get("motivoDescuento") not in finalJson.get("motivoDescuento"):
                     finalJson["motivoDescuento"].append(singleReceipt.get("motivoDescuento"))
+                if singleReceipt.get("monto") not in finalJson.get("montos"):
+                    finalJson["montos"].append(singleReceipt.get("monto"))
             return finalJson
         except CustomException as ex:
             raise CustomException(ex)
