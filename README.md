@@ -14,7 +14,7 @@ Clona el repositorio en tu máquina local utilizando el siguiente comando:
 git clone <URL-del-repositorio>
 ```
 
-## Paso 3: Crear y Activar el Ambiente Virtual
+## Paso 2: Crear y Activar el Ambiente Virtual
 
 En el directorio del proyecto, crea un ambiente virtual utilizando `venv`:
 
@@ -36,7 +36,7 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-## Paso 4: Instalar las Dependencias
+## Paso 3: Instalar las Dependencias
 
 Instala las librerías necesarias utilizando `pip` y el archivo `requirements.txt`:
 
@@ -44,33 +44,29 @@ Instala las librerías necesarias utilizando `pip` y el archivo `requirements.tx
 pip install -r requirements.txt
 ```
 
-## Paso 5: Crear y Configurar el Archivo `.env`
+## Paso 4: Crear y Configurar el Archivo `.env`
 
 Copia el contenido del archivo de plantilla `.env_template` proporcionado en el repositorio y pégalo en un nuevo archivo llamado `.env`. Luego, rellena los datos necesarios que se te proporcionaron por privado.
 
-## Paso 6: Configurar el Remoto para Enviar Cambios
+## Paso 5: Configurar la branch desde la que enviaras Cambios
 
-Configura el remoto para enviar los cambios a tu repositorio forked:
+Crea una rama nueva a partir de master para programar y después enviar tus cambios:
 
 ```bash
-git remote add origin <URL-de-tu-repositorio-forked>
+git checkout -b <nombre-de-la-feature>
 ```
 
 ## Paso 7: Enviar Cambios y Crear una Pull Request
 
-Haz tus cambios en el código, commitea y luego envía los cambios a tu repositorio forked:
+Haz tus cambios en el código, commitea y luego envía los cambios a master usando una Pull Request:
 
 ```bash
 git add .
 git commit -m "Descripción de los cambios"
-git push origin main
+git push origin <nombre-de-la-feature>
 ```
 
-Luego, desde la página de tu repositorio forked en GitHub, puedes crear una Pull Request hacia el repositorio original.
-
-## Paso 8: Enviar una Invitación al Repositorio Original
-
-Después de enviar la Pull Request al repositorio original, envía una invitación a los colaboradores necesarios desde la configuración de colaboradores del repositorio original en GitHub.
+Luego, desde la página del repositorio en GitHub, puedes crear una Pull Request hacia la rama master, asigna de reviewer al dueño del repositorio y notificale que has hecho una Pull Request.
 
 ¡Eso es todo! Ahora tienes el ambiente de trabajo configurado correctamente y has enviado tus cambios para su revisión.
 
