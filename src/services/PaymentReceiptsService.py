@@ -9,6 +9,95 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from extensions import db
 import pytz
 class PaymentReceiptService():
+    
+    @classmethod
+    def get_single_receipt_v2(cls,service_code,receipt_id):
+        try: 
+            # idnotapago
+            # fecha
+            # folio
+            # fechafactura
+            # foliofactura
+            # requierefactura
+            # total
+            # subtotal
+            # comisiontotal
+            # montomonedero
+            # tipopago
+            # estatus
+            # descuento
+            engine = get_connection_servicecode_orm(service_code)
+            db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+            payReceipt=db_session.query(
+                PaymentReceipt.idnotapago,
+                PaymentReceipt.fecha,
+                PaymentReceipt.folio,
+                PaymentReceipt.fechafactura,
+                PaymentReceipt.foliofactura,
+                PaymentReceipt.requierefactura,
+                PaymentReceipt.total,
+                PaymentReceipt.subtotal,
+                PaymentReceipt.comisiontotal,
+                PaymentReceipt.tipopago,
+                PaymentReceipt.estatus,
+                PaymentReceipt.descuento,
+            ).where(PaymentReceipt.idnotapago==receipt_id).first()
+            paymentDescriptions= db_session.query( PaymentReceiptDescription.idpago,PaymentReceiptDescription.monto, PaymentReceiptDescription.monederousado, PaymentReceiptDescription.descripcion).where(PaymentReceiptDescription.idnotapago == receipt_id).all()
+            paymentDiscount=(db_session.query(PaymentDiscount.idpago,PaymentDiscount.montoadescontar, Discount.titulo).join(Discount, Discount.iddescuento==PaymentDiscount.iddescuento).where(PaymentDiscount.idnotapago==receipt_id).all())
+            image= db_session.query(PaymentReceiptImage.image).where(PaymentReceiptImage.payment_receipt_id==receipt_id).first()
+            membershipPay=db_session.query(PaymentDiscountMembership.id_payment, PaymentDiscountMembership.amount_to_discount,Membership.title).where(PaymentDiscountMembership.id_payment_receipt==receipt_id).join(Membership,Membership.id_membership==PaymentDiscountMembership.id_membership).all()
+
+            receiptKeys =[
+            "idReceipt",
+            "date",
+            "invoice",
+            "billDate",
+            "billInvoice",
+            "useBill",
+            "total",
+            "subtotal",
+            "dutyFee",
+            "paymentType",
+            "status",
+            "discount",
+            ]
+            auxReceiptData={}
+            for index, value in enumerate(payReceipt):
+                auxReceiptData.update({receiptKeys[index]:value})
+            
+            auxReceiptData.update({"image":image})
+            
+            auxPaymentDescriptions= []
+            for item in paymentDescriptions:
+                auxPaymentDescriptions.append({
+                    "idPay":item[0],
+                    "amount":item[1],
+                    "walletAmount":item[2],
+                    "description":item[3],
+                })
+            auxMembershipDiscount= []
+            for item in membershipPay:
+                auxMembershipDiscount.append({
+                    "idPay":item[0],
+                    "discount":item[1],
+                    "title":item[2],
+                })
+            auxPaymentDiscounts= []
+            for item in paymentDiscount:
+                auxPaymentDiscounts.append({
+                    "idPay":item[0],
+                    "discount":item[1],
+                    "title":item[2],
+                })
+            return {
+                "paymentsReceipts":auxReceiptData,
+                "paymentDescriptions":auxPaymentDescriptions,
+                "discounts":auxPaymentDiscounts,
+                "membershipDiscounts":auxMembershipDiscount,
+            }
+        except CustomException as ex:
+            raise CustomException(ex)
+    
     @classmethod
     def get_single_receipt(cls,service_code,receipt_id):
         try:
@@ -58,13 +147,15 @@ class PaymentReceiptService():
                     "estatus":receiptInfo.estatus,
                     "motivoMembresia":motivoMembresia,
                     "montoMembresia":membershipDiscount,
-                    "monto":description.monto
+                    "monto":description.monto,
+                    "descuentoTotal":receiptInfo.descuento
                 })
-            finalJson= {key: value for key, value in receiptData[0].items() if key not in ["descripcion", "motivoMembresia", "motivoDescuento","monto"]}
+            finalJson= {key: value for key, value in receiptData[0].items() if key not in ["descripcion", "motivoMembresia", "motivoDescuento","monto","montoDescuento"]}
             finalJson.update({"descripcion":[]})
             finalJson.update({"motivoMembresia":[]})
             finalJson.update({"motivoDescuento":[]})
             finalJson.update({"montos":[]})
+            finalJson.update({"montosDescuentos":[]})
             for singleReceipt in receiptData:
                 if singleReceipt.get("descripcion") not in finalJson.get("descripcion"):
                     finalJson["descripcion"].append(singleReceipt.get("descripcion"))
@@ -74,6 +165,8 @@ class PaymentReceiptService():
                     finalJson["motivoDescuento"].append(singleReceipt.get("motivoDescuento"))
                 if singleReceipt.get("monto") not in finalJson.get("montos"):
                     finalJson["montos"].append(singleReceipt.get("monto"))
+                if singleReceipt.get("montoDescuento") not in finalJson.get("montosDescuentos"):
+                    finalJson["montosDescuentos"].append(singleReceipt.get("montoDescuento"))
             return finalJson
         except CustomException as ex:
             raise CustomException(ex)
