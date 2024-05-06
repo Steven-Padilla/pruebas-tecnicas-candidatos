@@ -1,5 +1,5 @@
 # from .MembershipData import MembershipData
-from .validation import validate_data
+from .validation import validate_data, validate_data_with_nested_types
 from .Security import Security
 from .errors.CustomException import CustomException, DataTypeException, FrontendApiException, MissingDataException, MissingKeyException, OverlappedReservationException, ReservationPriceException, WhatsAppException
 # from .Fcm import Fcm
@@ -21,5 +21,6 @@ __all__ = [
     "truncate_first_word",
     "validate_data",
     "WhatsAppException",
-    # "WhatsAppMessage"
+    # "WhatsAppMessage",
+    "validate_data_with_nested_types",
 ]
