@@ -11,6 +11,7 @@ from .users_system import UsersSystem
 from .wallet_modes import WalletModes
 from .payment_type import Tipodepago
 from .amenity import Amenity
+from .reservation_rules import ReservationRules
 
 __all__ = [
     "Discount",
@@ -25,5 +26,6 @@ __all__ = [
     "UsersSystem", 
     "WalletModes", 
     "Tipodepago",
-    "Amenity"
+    "Amenity",
+    "ReservationRules",
     ]

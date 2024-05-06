@@ -17,6 +17,7 @@ from .routes import UserTypeRoutes
 from .routes import WalletRoutes
 from .routes import EnterpriseRoute
 from .routes import ScheduleRoutes
+from .routes import ReservationRulesRoutes
 
 
 
@@ -41,5 +42,7 @@ def init_app(config):
     app.register_blueprint(WalletRoutes.main, url_prefix='/wallet')
     app.register_blueprint(EnterpriseRoute.main, url_prefix='/enterprise_data')
     app.register_blueprint(ScheduleRoutes.main, url_prefix='/schedule')
+
+    # app.register_blueprint(ReservationRulesRoutes.main, url_prefix='/reservationrules')
 
     return app
