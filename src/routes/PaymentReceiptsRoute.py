@@ -28,7 +28,7 @@ def get_single_receipts_v2():
 
         receipt_id = request.args['receipt_id']
         service_code = request.args['service_code']
-        data=PaymentReceiptService.get_single_receipt(service_code,receipt_id)
+        data=PaymentReceiptService.get_single_receipt_v2(service_code,receipt_id)
         
         return jsonify({'data': data, 'success': True})
     except MissingKeyException as ex:
