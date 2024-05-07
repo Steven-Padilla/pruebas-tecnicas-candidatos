@@ -41,6 +41,7 @@ class PaymentReceiptService():
                 PaymentReceipt.tipopago,
                 PaymentReceipt.estatus,
                 PaymentReceipt.descuento,
+                PaymentReceipt.montomonedero,
             ).where(PaymentReceipt.idnotapago==receipt_id).first()
             paymentDescriptions= db_session.query( PaymentReceiptDescription.idpago,PaymentReceiptDescription.monto, PaymentReceiptDescription.monederousado, PaymentReceiptDescription.descripcion).where(PaymentReceiptDescription.idnotapago == receipt_id).all()
             paymentDiscount=(db_session.query(PaymentDiscount.idpago,PaymentDiscount.montoadescontar, Discount.titulo).join(Discount, Discount.iddescuento==PaymentDiscount.iddescuento).where(PaymentDiscount.idnotapago==receipt_id).all())
@@ -60,12 +61,13 @@ class PaymentReceiptService():
             "paymentType",
             "status",
             "discount",
+            "totalWallet"
             ]
             auxReceiptData={}
             for index, value in enumerate(payReceipt):
                 auxReceiptData.update({receiptKeys[index]:value})
-            
-            auxReceiptData.update({"image":image})
+            # print(f"Imageeeen =============\n{image}")
+            auxReceiptData.update({"image":image[0] if image else ""})
             
             auxPaymentDescriptions= []
             for item in paymentDescriptions:
@@ -89,12 +91,9 @@ class PaymentReceiptService():
                     "discount":item[1],
                     "title":item[2],
                 })
-            return {
-                "paymentsReceipts":auxReceiptData,
-                "paymentDescriptions":auxPaymentDescriptions,
-                "discounts":auxPaymentDiscounts,
-                "membershipDiscounts":auxMembershipDiscount,
-            }
+            auxReceiptData.update({"paymentDescriptions":auxPaymentDescriptions,"discounts":auxPaymentDiscounts,"membershipDiscounts":auxMembershipDiscount,})
+
+            return auxReceiptData
         except CustomException as ex:
             raise CustomException(ex)
     
