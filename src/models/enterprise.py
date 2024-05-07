@@ -22,3 +22,5 @@ class Enterprise(db.Model, SerializerMixin):
     service_code = Column("codserv", Integer)
     image = Column("imagen", String(255))
     reserve_day_limit = Column("limitediasreserva", Integer)
+    
+    #TODO: agregar campos descripcion y pagina web

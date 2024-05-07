@@ -11,7 +11,7 @@ class Security():
     tz = pytz.timezone("America/Mexico_City")
 
     @classmethod
-    def generate_token(cls, authenticated_user, service_code, is_user_system_central, user_type):
+    def generate_token(cls, authenticated_user, service_code, is_user_system_central, user_type, profile_id):
 
         payload = {
             'iat': datetime.datetime.now(tz=cls.tz),
@@ -21,30 +21,35 @@ class Security():
             'user_type': user_type,
             'service_code': service_code,
             'is_user_system_central': is_user_system_central,
+            'profile_id': profile_id,
             'roles': ['Administrator', 'Editor']
         }
         return jwt.encode(payload, cls.secret, algorithm="HS256")
 
     @classmethod
     def verify_token(cls, headers):
-        if 'Authorization' in headers.keys():
-            authorization = headers['Authorization']
-            encoded_token = authorization.split(" ")[1]
-            if (len(encoded_token) > 0):
-                try:
-                    payload = cls.decode_token(encoded_token)
+        try:
+            if 'Authorization' in headers.keys():
+                authorization = headers['Authorization']
+                encoded_token = authorization.split(" ")[1]
+                if (len(encoded_token) > 0):
+                    try:
+                        payload = cls.decode_token(encoded_token)
 
-                    if cls.validate_exp(payload):
-                        raise ExpiredSignatureError("Signature has expired")
-                    roles = list(payload['roles'])
-                    if 'Administrator' in roles:
-                        return True
-                    return False
-                except ExpiredSignatureError:
-                    return False
-                except jwt.InvalidSignatureError:
-                    return False
-        return False
+                        if cls.validate_exp(payload):
+                            raise ExpiredSignatureError("Signature has expired")
+                        roles = list(payload['roles'])
+                        if 'Administrator' in roles:
+                            return True
+                        return False
+                    except ExpiredSignatureError:
+                        return False
+                    except jwt.InvalidSignatureError:
+                        return False
+            return False
+        except Exception as ex:
+            print(str(ex))
+            return False
 
     @classmethod
     def validate_exp(cls, payload):
